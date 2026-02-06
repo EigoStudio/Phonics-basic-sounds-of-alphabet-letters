@@ -10,7 +10,7 @@
             --vowel-color: #ff0000;
             --consonant-color: #0000ff;
             --success: #4caf50;
-            --lv3-color: #9c27b0; /* Level 3のテーマカラー：パープル */
+            --lv3-color: #9c27b0;
         }
 
         body {
@@ -75,16 +75,51 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 選択肢を5つ並べるための調整 */
-        .choices-5 { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        /* --- 選択肢のレイアウト設定 --- */
+        .choices-5 { 
+            display: flex; 
+            justify-content: center; 
+            gap: 15px; 
+            margin: 0 auto 20px;
+            flex-wrap: nowrap; /* PC版は一列に */
+        }
+
         .choice-btn {
-            width: 85px; height: 85px; background: white; border: 3px solid #eee;
-            font-size: 3.2rem; border-radius: 20px; cursor: pointer;
+            width: 90px; height: 90px; background: white; border: 3px solid #eee;
+            font-size: 3.5rem; border-radius: 20px; cursor: pointer;
             display: flex; justify-content: center; align-items: center;
             box-shadow: 0 6px 0 #ddd;
             transition: transform 0.1s;
+            flex-shrink: 0;
         }
         .choice-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #ddd; }
+
+        /* --- スマホ用設定 --- */
+        @media (max-width: 600px) {
+            .choices-5 { 
+                display: grid; 
+                grid-template-columns: repeat(6, 1fr); /* 6列グリッド */
+                gap: 10px;
+                flex-wrap: wrap;
+                max-width: 320px; /* 横幅を絞って2段にする */
+            }
+            
+            /* 上段3つ */
+            .choice-btn:nth-child(1),
+            .choice-btn:nth-child(2),
+            .choice-btn:nth-child(3) { grid-column: span 2; }
+            
+            /* 下段2つ（中央寄り） */
+            .choice-btn:nth-child(4),
+            .choice-btn:nth-child(5) { grid-column: span 3; }
+
+            .choice-btn { width: 75px; height: 75px; font-size: 2.5rem; }
+            .game-card { padding: 15px; }
+            .single-image { width: 180px; height: 180px; }
+            .word-slot { font-size: 3.2rem; }
+            .drop-target { width: 60px; height: 70px; border-bottom-width: 6px; }
+            .btn-action { font-size: 1.4rem; padding: 12px 30px; }
+        }
 
         #toast {
             position: absolute; top: 20px; right: 20px;
@@ -102,15 +137,6 @@
             padding: 15px 50px; font-size: 1.8rem;
             border-radius: 100px; border: none; cursor: pointer;
             box-shadow: 0 6px 0 #7b1fa2;
-        }
-
-        @media (max-width: 600px) {
-            .game-card { padding: 15px; }
-            .single-image { width: 180px; height: 180px; }
-            .word-slot { font-size: 3.2rem; }
-            .drop-target { width: 60px; height: 70px; border-bottom-width: 6px; }
-            .choice-btn { width: 65px; height: 65px; font-size: 2.2rem; }
-            .btn-action { font-size: 1.4rem; padding: 12px 30px; }
         }
     </style>
 </head>
@@ -220,13 +246,10 @@
             area.innerHTML = '';
             const pool = isVowel(currentQ.l) ? vowels : allWords.map(a => a.l).filter(l => !vowels.includes(l));
             let choices = [currentQ.l];
-            
-            // 選択肢を5つに増強 (Level 3: Ultimate)
             while(choices.length < 5) {
                 let r = pool[Math.floor(Math.random() * pool.length)];
                 if(!choices.includes(r)) choices.push(r);
             }
-            
             choices.sort(() => 0.5 - Math.random()).forEach(char => {
                 const btn = document.createElement('div');
                 btn.className = 'choice-btn';
@@ -254,14 +277,14 @@
         function celebrate() {
             const duration = 7 * 1000;
             const end = Date.now() + duration;
-            speak("Unbelievable! You are a Level 3 Alphabet Master! You did it!");
+            speak("Unbelievable! You are a Level 3 Alphabet Master!");
 
             (function frame() {
                 confetti({ particleCount: 7, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#9c27b0', '#ffd700'] });
                 confetti({ particleCount: 7, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#9c27b0', '#ffd700'] });
                 if (Date.now() < end) requestAnimationFrame(frame);
                 else {
-                    alert("🏆 CONGRATULATIONS! 🏆\nYou have mastered the Ultimate Alphabet Level 3!");
+                    alert("🏆 CONGRATULATIONS! 🏆\nYou have mastered Level 3!");
                     showDictionary();
                 }
             }());
