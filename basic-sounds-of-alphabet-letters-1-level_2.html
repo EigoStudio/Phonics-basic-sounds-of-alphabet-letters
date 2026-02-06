@@ -10,6 +10,7 @@
             --vowel-color: #ff0000;
             --consonant-color: #0000ff;
             --success: #4caf50;
+            --lv2-theme: #e91e63;
         }
 
         body {
@@ -74,19 +75,46 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 選択肢を4つ並べるための調整 */
-        .choices-4 { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        /* --- 選択肢のレイアウト (PC・スマホ共通で一列) --- */
+        .choices-4 { 
+            display: flex; 
+            justify-content: center; 
+            gap: 12px; 
+            margin: 0 auto 20px;
+            flex-wrap: nowrap; /* 絶対に折り返さない */
+            width: 100%;
+        }
+
         .choice-btn {
-            width: 90px; height: 90px; background: white; border: 3px solid #eee;
-            font-size: 3.5rem; border-radius: 25px; cursor: pointer;
+            width: 85px; height: 85px; background: white; border: 3px solid #eee;
+            font-size: 3.2rem; border-radius: 20px; cursor: pointer;
             display: flex; justify-content: center; align-items: center;
             box-shadow: 0 8px 0 #ddd;
+            transition: transform 0.1s;
+            flex-shrink: 1; /* 画面が狭いときはボタンを縮める */
+            min-width: 0;
         }
         .choice-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #ddd; }
 
+        /* --- スマホ用微調整 --- */
+        @media (max-width: 600px) {
+            .choices-4 { gap: 8px; } /* スマホでは間隔を少し詰める */
+            .choice-btn { 
+                width: 75px; height: 75px; 
+                font-size: 2.8rem; 
+                border-radius: 15px;
+                box-shadow: 0 5px 0 #ddd;
+            }
+            .game-card { padding: 15px 10px; }
+            .single-image { width: 180px; height: 180px; }
+            .word-slot { font-size: 3.5rem; }
+            .drop-target { width: 65px; height: 75px; border-bottom-width: 6px; }
+            .btn-action { font-size: 1.4rem; padding: 12px 30px; }
+        }
+
         #toast {
             position: absolute; top: 20px; right: 20px;
-            background: #ff9800; color: white; padding: 10px 25px;
+            background: var(--lv2-theme); color: white; padding: 10px 25px;
             border-radius: 50px; font-size: 1.8rem; font-weight: bold;
             opacity: 0; transform: scale(0.5);
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -100,34 +128,25 @@
             border-radius: 100px; border: none; cursor: pointer;
             box-shadow: 0 6px 0 #2e7d32;
         }
-
-        @media (max-width: 600px) {
-            .game-card { padding: 15px; }
-            .single-image { width: 180px; height: 180px; }
-            .word-slot { font-size: 3.5rem; }
-            .drop-target { width: 65px; height: 75px; border-bottom-width: 6px; }
-            .choice-btn { width: 70px; height: 70px; font-size: 2.5rem; }
-            .btn-action { font-size: 1.4rem; padding: 12px 30px; }
-        }
     </style>
 </head>
 <body>
 
-   <div id="dictionaryView">
-    <h1 style="font-size: 3.5rem; color: #333; text-shadow: 2px 2px white; margin: 10px 0;">🌈 Alphabet <span style="color: #e91e63;">Level 2</span></h1>
-    <p style="font-size: 1.2rem; color: #666; margin-bottom: 20px;">Listen carefully! 4 choices this time!</p>
-    <div class="dict-grid" id="dictGrid"></div>
-    <button class="btn-action" onclick="startGameMode()" style="background: #e91e63; box-shadow: 0 6px 0 #ad1457; transform: scale(1.1);">Level 2 Start! 🚀</button>
-</div>
-
-<div id="gameView" class="hidden">
-    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px;">
-        <button onclick="showDictionary()" style="cursor:pointer; background:none; border:none; color:#666; font-size:1.1rem; font-weight:bold;">← Menu</button>
-        <div style="display: flex; gap: 8px; align-items: center;">
-            <span style="background: #e91e63; color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; font-size: 0.9rem;">LV.2</span>
-            <div id="progressText" style="font-size: 1.3rem; color: #333; font-weight: bold; background:white; padding:4px 12px; border-radius:15px;">1 / 26</div>
-        </div>
+    <div id="dictionaryView">
+        <h1 style="font-size: 3.5rem; color: #333; text-shadow: 2px 2px white; margin: 10px 0;">🌈 Alphabet <span style="color: var(--lv2-theme);">Level 2</span></h1>
+        <p style="font-size: 1.2rem; color: #666; margin-bottom: 20px;">Listen carefully! 4 choices in a row!</p>
+        <div class="dict-grid" id="dictGrid"></div>
+        <button class="btn-action" onclick="startGameMode()" style="background: var(--lv2-theme); box-shadow: 0 6px 0 #ad1457; transform: scale(1.1);">Level 2 Start! 🚀</button>
     </div>
+
+    <div id="gameView" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px;">
+            <button onclick="showDictionary()" style="cursor:pointer; background:none; border:none; color:#666; font-size:1.1rem; font-weight:bold;">← Menu</button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="background: var(--lv2-theme); color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; font-size: 0.9rem;">LV.2</span>
+                <div id="progressText" style="font-size: 1.3rem; color: #333; font-weight: bold; background:white; padding:4px 12px; border-radius:15px;">1 / 26</div>
+            </div>
+        </div>
         
         <div class="game-card">
             <div id="toast">Correct! ✨</div>
@@ -136,11 +155,12 @@
             </div>
             <div class="word-slot" id="wordContainer" onclick="hintVoice()"></div>
             <div class="choices-4" id="choicesArea"></div>
-            <button id="nextBtn" class="btn-action hidden">Next Letter! →</button>
+            <button id="nextBtn" class="btn-action hidden" style="background: var(--lv2-theme); box-shadow: 0 6px 0 #ad1457;">Next Letter! →</button>
         </div>
     </div>
 
     <script>
+        // ... (JavaScript部分は変更なしのため省略。前のコードをそのままお使いください)
         const vowels = ['a', 'e', 'i', 'o', 'u'];
         const allWords = [
             { w: "apple", l: "a" }, { w: "bat", l: "b" }, { w: "cat", l: "c" }, { w: "dog", l: "d" },
@@ -218,13 +238,10 @@
             area.innerHTML = '';
             const pool = isVowel(currentQ.l) ? vowels : allWords.map(a => a.l).filter(l => !vowels.includes(l));
             let choices = [currentQ.l];
-            
-            // 選択肢を4つに変更 (Level 2版)
             while(choices.length < 4) {
                 let r = pool[Math.floor(Math.random() * pool.length)];
                 if(!choices.includes(r)) choices.push(r);
             }
-            
             choices.sort(() => 0.5 - Math.random()).forEach(char => {
                 const btn = document.createElement('div');
                 btn.className = 'choice-btn';
@@ -252,14 +269,14 @@
         function celebrate() {
             const duration = 5 * 1000;
             const end = Date.now() + duration;
-            speak("You are an alphabet superstar! Congratulations!");
+            speak("You finished Level 2!");
 
             (function frame() {
-                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ff0000', '#0000ff', '#ffff00'] });
-                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff0000', '#0000ff', '#ffff00'] });
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#e91e63', '#ffffff'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#e91e63', '#ffffff'] });
                 if (Date.now() < end) requestAnimationFrame(frame);
                 else {
-                    alert("Amazing! You are an Alphabet Superstar! 👑");
+                    alert("Amazing! Level 2 Complete! 🚀");
                     showDictionary();
                 }
             }());
