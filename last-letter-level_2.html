@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ending Sound - Level 2</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --vowel-color: #ff0000;
+            --consonant-color: #0000ff;
+            --success: #4caf50;
+            --lv2-theme: #e91e63; /* Level 2 用のピンク系テーマ */
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background: linear-gradient(-45deg, #ffcfcf, #cfd9ff, #cfffd5, #fff8cf);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #dictionaryView, #gameView { width: 95%; max-width: 1000px; padding: 20px; text-align: center; }
+        .hidden { display: none !important; }
+
+        .dict-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .dict-item {
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px;
+            padding: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .dict-item img { width: 100%; aspect-ratio: 1; object-fit: contain; }
+        .dict-letter { font-size: 2.5rem; font-weight: bold; display: block; opacity: 0; margin-top: 5px; }
+        .dict-item.revealed .dict-letter { opacity: 1; }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 35px;
+            padding: 25px 40px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+            position: relative;
+            margin-top: 5px;
+        }
+        .single-image { width: 280px; height: 280px; margin: 0 auto 10px; cursor: pointer; }
+        .single-image img { width: 100%; height: 100%; object-fit: contain; }
+        
+        .word-slot { font-size: 5.5rem; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; font-weight: bold; }
+        .drop-target {
+            width: 100px;
+            height: 110px;
+            border-bottom: 10px solid #333;
+            display: flex; justify-content: center; align-items: center;
+            margin-left: 10px;
+        }
+
+        /* --- Level 2: 選択肢4つを一列に配置 --- */
+        .choices-4 { 
+            display: flex; 
+            justify-content: center; 
+            gap: 12px; 
+            margin: 0 auto 20px;
+            flex-wrap: nowrap;
+            width: 100%;
+        }
+
+        .choice-btn {
+            width: 85px; height: 85px; background: white; border: 3px solid #eee;
+            font-size: 3.2rem; border-radius: 20px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 8px 0 #ddd;
+            transition: transform 0.1s;
+            flex-shrink: 1;
+            min-width: 0;
+        }
+        .choice-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #ddd; }
+
+        @media (max-width: 600px) {
+            .choices-4 { gap: 8px; }
+            .choice-btn { width: 75px; height: 75px; font-size: 2.8rem; border-radius: 15px; }
+            .game-card { padding: 15px 10px; }
+            .single-image { width: 180px; height: 180px; }
+            .word-slot { font-size: 3.5rem; }
+            .drop-target { width: 65px; height: 75px; border-bottom-width: 6px; }
+            .btn-action { font-size: 1.4rem; padding: 12px 30px; }
+        }
+
+        #toast {
+            position: absolute; top: 20px; right: 20px;
+            background: var(--lv2-theme); color: white; padding: 10px 25px;
+            border-radius: 50px; font-size: 1.8rem; font-weight: bold;
+            opacity: 0; transform: scale(0.5);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            z-index: 10;
+        }
+        #toast.show { opacity: 1; transform: scale(1); }
+
+        .btn-action {
+            background: var(--success); color: white;
+            padding: 15px 50px; font-size: 1.8rem;
+            border-radius: 100px; border: none; cursor: pointer;
+            box-shadow: 0 6px 0 #2e7d32;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="dictionaryView">
+        <h1 style="font-size: 3rem; color: #333; text-shadow: 2px 2px white; margin: 10px 0;">🎯 Ending Sound <span style="color: var(--lv2-theme);">Level 2</span></h1>
+        <p style="font-size: 1.2rem; color: #666; margin-bottom: 20px;">Listen carefully! 4 choices in a row!</p>
+        <div class="dict-grid" id="dictGrid"></div>
+        <button class="btn-action" onclick="startGameMode()" style="background: var(--lv2-theme); box-shadow: 0 6px 0 #ad1457; transform: scale(1.1);">Level 2 Start! 🚀</button>
+    </div>
+
+    <div id="gameView" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px;">
+            <button onclick="showDictionary()" style="cursor:pointer; background:none; border:none; color:#666; font-size:1.1rem; font-weight:bold;">← Menu</button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="background: var(--lv2-theme); color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; font-size: 0.9rem;">LV.2</span>
+                <div id="progressText" style="font-size: 1.3rem; color: #333; font-weight: bold; background:white; padding:4px 12px; border-radius:15px;">1 / 20</div>
+            </div>
+        </div>
+        
+        <div class="game-card">
+            <div id="toast">Correct! ✨</div>
+            <div class="single-image" onclick="hintVoice()">
+                <img id="gameImg" src="" alt="target">
+            </div>
+            <div class="word-slot" id="wordContainer"></div>
+            <div class="choices-4" id="choicesArea"></div>
+            <button id="nextBtn" class="btn-action hidden" style="background: var(--lv2-theme); box-shadow: 0 6px 0 #ad1457;">Next Word! →</button>
+        </div>
+    </div>
+
+    <script>
+        const targetLetters = ['b', 'd', 'g', 'm', 'n', 'p', 't'];
+        const wordList = [
+            "cab", "tub", "web", "bed", "mad", "bad", "bag", "pig", "dog", 
+            "gum", "ham", "jam", "pen", "sun", "run", "cap", "mop", "cat", "pot", "bat"
+        ];
+        const praiseWords = ["Correct! ✨", "Well Done! 🚀", "You Got It! 🌟", "Super! 🌈", "Nice! 🎯"];
+
+        let gameQueue = [];
+        let currentWord = "";
+        let currentLastLetter = "";
+
+        function speak(text) {
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = "en-US";
+            uttr.rate = 0.8;
+            synth.speak(uttr);
+        }
+
+        function initDictionary() {
+            const grid = document.getElementById('dictGrid');
+            grid.innerHTML = '';
+            wordList.forEach(w => {
+                const div = document.createElement('div');
+                div.className = 'dict-item';
+                div.innerHTML = `
+                    <img src="images-last-letter/${w}.jpg">
+                    <span class="dict-letter" style="color:var(--consonant-color)">${w.slice(-1)}</span>
+                `;
+                div.onclick = () => { div.classList.add('revealed'); speak(w); };
+                grid.appendChild(div);
+            });
+        }
+
+        function startGameMode() {
+            document.getElementById('dictionaryView').classList.add('hidden');
+            document.getElementById('gameView').classList.remove('hidden');
+            gameQueue = [...wordList].sort(() => 0.5 - Math.random());
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if(gameQueue.length === 0) {
+                celebrate();
+                return;
+            }
+            currentWord = gameQueue.pop();
+            currentLastLetter = currentWord.slice(-1);
+            document.getElementById('progressText').textContent = `${wordList.length - gameQueue.length} / ${wordList.length}`;
+            document.getElementById('gameImg').src = `images-last-letter/${currentWord}.jpg`;
+            
+            const container = document.getElementById('wordContainer');
+            container.innerHTML = `<span>${currentWord.slice(0, -1)}</span><div id="dropTarget" class="drop-target"></div>`;
+            
+            document.getElementById('nextBtn').classList.add('hidden');
+            document.getElementById('toast').classList.remove('show');
+            renderChoices();
+        }
+
+        function renderChoices() {
+            const area = document.getElementById('choicesArea');
+            area.innerHTML = '';
+            let choices = [currentLastLetter];
+            while(choices.length < 4) {
+                let r = targetLetters[Math.floor(Math.random() * targetLetters.length)];
+                if(!choices.includes(r)) choices.push(r);
+            }
+            choices.sort(() => 0.5 - Math.random()).forEach(char => {
+                const btn = document.createElement('div');
+                btn.className = 'choice-btn';
+                btn.style.color = 'var(--consonant-color)';
+                btn.textContent = char;
+                btn.onclick = () => { if(document.getElementById('nextBtn').classList.contains('hidden')) check(char); };
+                area.appendChild(btn);
+            });
+        }
+
+        function check(char) {
+            if(char === currentLastLetter) {
+                document.getElementById('dropTarget').textContent = char;
+                document.getElementById('dropTarget').style.color = 'var(--consonant-color)';
+                const toast = document.getElementById('toast');
+                toast.textContent = praiseWords[Math.floor(Math.random() * praiseWords.length)];
+                toast.classList.add('show');
+                document.getElementById('nextBtn').classList.remove('hidden');
+                speak(currentWord);
+                confetti({ particleCount: 50, spread: 80, origin: { y: 0.8 }, colors: ['#e91e63', '#ffffff', '#ffeb3b'] });
+            } else {
+                speak(char);
+            }
+        }
+
+        function celebrate() {
+            const end = Date.now() + 5000;
+            speak("Amazing! You've mastered Level 2!");
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#e91e63', '#ffffff'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#e91e63', '#ffffff'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+                else { alert("Incredible! You've mastered Level 2! 🏆"); showDictionary(); }
+            }());
+        }
+
+        function hintVoice() { speak(currentWord); }
+        function showDictionary() {
+            document.getElementById('gameView').classList.add('hidden');
+            document.getElementById('dictionaryView').classList.remove('hidden');
+        }
+
+        initDictionary();
+        document.getElementById('nextBtn').onclick = nextQuestion;
+    </script>
+</body>
+</html>
