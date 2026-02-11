@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magic "e" Part 1 - Level 3</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --vowel-color: #ff0000;
+            --success: #4caf50;
+            --magic-e-color: #ff9800;
+            --level3-color: #d32f2f;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', sans-serif;
+            background: linear-gradient(-45deg, #ffebee, #f3e5f5, #e3f2fd, #fffde7);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #dictionaryView, #gameView { width: 95%; max-width: 1000px; padding: 20px; text-align: center; }
+        .hidden { display: none !important; }
+
+        .dict-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        @media (min-width: 768px) { .dict-grid { grid-template-columns: repeat(4, 1fr); } }
+
+        .dict-item {
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px; padding: 10px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: 0.2s;
+        }
+        .dict-item img { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 15px; }
+        .dict-word { 
+            font-size: 1.8rem; font-weight: bold; margin-top: 5px; opacity: 0;
+            letter-spacing: 0.1rem; font-variant-ligatures: none; 
+        }
+        .dict-item.revealed .dict-word { opacity: 1; }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 35px; padding: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.1); position: relative;
+        }
+        .single-image { width: 200px; height: 200px; margin: 0 auto 10px; cursor: pointer; }
+        .single-image img { width: 100%; height: 100%; object-fit: contain; }
+        
+        .word-slot { font-size: 4.5rem; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; font-weight: bold; }
+        .drop-target {
+            width: 70px; height: 80px; border-bottom: 8px solid #333;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 5px;
+        }
+        .vowel-slot { color: var(--vowel-color); }
+        .e-slot { color: var(--magic-e-color); }
+
+        .choice-group-label { font-size: 1.2rem; color: #666; margin-bottom: 10px; font-weight: bold; }
+        .choices-area { display: flex; flex-direction: column; gap: 20px; align-items: center; }
+        .choices-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; max-width: 400px; }
+        
+        /* eの選択肢を他のボタンと同じデザインに */
+        .e-choices { display: flex; gap: 20px; justify-content: center; width: 100%; }
+
+        .choice-btn {
+            font-family: inherit; /* 親要素のフォントを継承 */
+            background: white; border: 3px solid #eee;
+            font-size: 3rem; border-radius: 15px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 5px 0 #ddd; transition: 0.1s; width: 90px; height: 90px;
+        }
+        .choice-btn.v { color: var(--vowel-color); }
+        .choice-btn.e-btn { color: var(--magic-e-color); }
+        .choice-btn.blank-btn { color: #ccc; }
+        .choice-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #ddd; }
+
+        .btn-action {
+            background: var(--success); color: white;
+            padding: 12px 35px; font-size: 1.4rem;
+            border-radius: 100px; border: none; cursor: pointer;
+            box-shadow: 0 5px 0 #2e7d32; margin-top: 15px;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="dictionaryView">
+        <h1 style="font-size: 2.5rem; color: var(--level3-color);">Magic "e" Part 1</h1>
+        <p style="font-weight: bold;">Level 3: The Final Master Challenge!</p>
+        <div class="dict-grid" id="dictGrid"></div>
+        <button class="btn-action" onclick="startGameMode()">Level 3 Start! →</button>
+    </div>
+
+    <div id="gameView" class="hidden">
+        <div style="display: flex; justify-content: space-between; width: 100%; max-width: 500px; margin-bottom: 10px;">
+            <button onclick="showDictionary()" style="cursor:pointer; background:none; border:none; font-weight:bold;">← Menu</button>
+            <div id="progressText" style="font-weight: bold; background:white; padding:5px 15px; border-radius:20px; border: 2px solid var(--level3-color);">1 / 16</div>
+        </div>
+        
+        <div class="game-card">
+            <div class="single-image" onclick="hintVoice()">
+                <img id="gameImg" src="" alt="target">
+            </div>
+            
+            <div class="word-slot" id="wordContainer"></div>
+
+            <div class="choices-area">
+                <div id="vowelSection">
+                    <div class="choice-group-label">1. Choose the Vowel</div>
+                    <div class="choices-grid" id="vowelChoices"></div>
+                </div>
+
+                <div id="eSection" class="hidden">
+                    <div class="choice-group-label">2. Magic "e" or Blank?</div>
+                    <div class="e-choices">
+                        <button class="choice-btn e-btn" onclick="checkFinal('e')">e</button>
+                        <button class="choice-btn blank-btn" onclick="checkFinal('')">-</button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="nextBtn" class="btn-action hidden">Next Word! →</button>
+        </div>
+    </div>
+
+    <script>
+        // (JavaScript部分は前回と同様です)
+        const wordData = [
+            { word: "tap", vowel: "a", hasE: false }, { word: "tape", vowel: "a", hasE: true },
+            { word: "mad", vowel: "a", hasE: false }, { word: "made", vowel: "a", hasE: true },
+            { word: "win", vowel: "i", hasE: false }, { word: "wine", vowel: "i", hasE: true },
+            { word: "fin", vowel: "i", hasE: false }, { word: "fine", vowel: "i", hasE: true },
+            { word: "hop", vowel: "o", hasE: false }, { word: "hope", vowel: "o", hasE: true },
+            { word: "cod", vowel: "o", hasE: false }, { word: "code", vowel: "o", hasE: true },
+            { word: "tub", vowel: "u", hasE: false }, { word: "tube", vowel: "u", hasE: true },
+            { word: "cut", vowel: "u", hasE: false }, { word: "cute", vowel: "u", hasE: true }
+        ];
+
+        const allVowels = ['a', 'i', 'o', 'u'];
+        let gameQueue = [];
+        let currentIdx = 0;
+        let currentItem = null;
+        let selectedVowel = "";
+
+        function speak(text) {
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = "en-US";
+            uttr.rate = 0.8;
+            synth.speak(uttr);
+        }
+
+        function initDictionary() {
+            const grid = document.getElementById('dictGrid');
+            grid.innerHTML = '';
+            wordData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'dict-item';
+                div.innerHTML = `
+                    <img src="images-magic-e_1/${item.word}.jpg" onerror="this.src='https://via.placeholder.com/150?text=${item.word}'">
+                    <div class="dict-word">${item.word}</div>
+                `;
+                div.onclick = () => { div.classList.add('revealed'); speak(item.word); };
+                grid.appendChild(div);
+            });
+        }
+
+        function startGameMode() {
+            document.getElementById('dictionaryView').classList.add('hidden');
+            document.getElementById('gameView').classList.remove('hidden');
+            gameQueue = [...wordData].sort(() => 0.5 - Math.random());
+            currentIdx = 0;
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if(currentIdx >= gameQueue.length) {
+                celebrate();
+                return;
+            }
+            currentItem = gameQueue[currentIdx];
+            selectedVowel = "";
+            document.getElementById('progressText').textContent = `${currentIdx + 1} / ${gameQueue.length}`;
+            document.getElementById('gameImg').src = `images-magic-e_1/${currentItem.word}.jpg`;
+            
+            const container = document.getElementById('wordContainer');
+            const stem = currentItem.hasE ? currentItem.word.slice(0, -1) : currentItem.word;
+            const vowelIndex = stem.indexOf(currentItem.vowel);
+            const prefix = stem.substring(0, vowelIndex);
+            const suffix = stem.substring(vowelIndex + 1);
+
+            container.innerHTML = `
+                <span>${prefix}</span>
+                <div id="vowelTarget" class="drop-target vowel-slot"></div>
+                <span>${suffix}</span>
+                <div id="eTarget" class="drop-target e-slot"></div>
+            `;
+            
+            document.getElementById('vowelSection').classList.remove('hidden');
+            document.getElementById('eSection').classList.add('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+            renderVowelChoices();
+        }
+
+        function renderVowelChoices() {
+            const area = document.getElementById('vowelChoices');
+            area.innerHTML = '';
+            allVowels.forEach(v => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn v';
+                btn.textContent = v;
+                btn.onclick = () => selectVowel(v);
+                area.appendChild(btn);
+            });
+        }
+
+        function selectVowel(v) {
+            if(v === currentItem.vowel) {
+                selectedVowel = v;
+                document.getElementById('vowelTarget').textContent = v;
+                document.getElementById('vowelSection').classList.add('hidden');
+                document.getElementById('eSection').classList.remove('hidden');
+                speak(v);
+            } else {
+                speak(v);
+                const target = document.getElementById('vowelTarget');
+                target.style.borderColor = 'red';
+                setTimeout(() => target.style.borderColor = '#333', 500);
+            }
+        }
+
+        function checkFinal(choice) {
+            const isCorrect = (choice === 'e' && currentItem.hasE) || (choice === '' && !currentItem.hasE);
+            
+            if(isCorrect) {
+                document.getElementById('eTarget').textContent = choice === 'e' ? 'e' : '';
+                if(choice === '') document.getElementById('eTarget').style.borderBottom = 'none';
+                
+                document.getElementById('eSection').classList.add('hidden');
+                document.getElementById('nextBtn').classList.remove('hidden');
+                speak(currentItem.word);
+                confetti({ 
+                    particleCount: 80, spread: 70, origin: { y: 0.8 },
+                    colors: ['#ff9800', '#d32f2f', '#ffffff']
+                });
+            } else {
+                speak("Try again");
+                const target = document.getElementById('eTarget');
+                target.style.borderColor = 'red';
+                setTimeout(() => target.style.borderColor = '#333', 500);
+            }
+        }
+
+        function celebrate() {
+            speak("Incredible! You are the Magic e Master!");
+            confetti({ particleCount: 200, spread: 150, origin: { y: 0.6 } });
+            setTimeout(() => {
+                alert("Congratulations! Level 3 Complete! 🏆");
+                showDictionary();
+            }, 1000);
+        }
+
+        function hintVoice() { speak(currentItem.word); }
+        function showDictionary() {
+            document.getElementById('gameView').classList.add('hidden');
+            document.getElementById('dictionaryView').classList.remove('hidden');
+        }
+
+        initDictionary();
+        document.getElementById('nextBtn').onclick = () => { currentIdx++; nextQuestion(); };
+    </script>
+</body>
+</html>
