@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digraphs - sh / ch / th / wh / ph / ck</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --vowel-color: #ff0000;
+            --consonant-color: #0000ff;
+            --success: #4caf50;
+            --accent: #ff9800;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background: linear-gradient(-45deg, #fff9c4, #cfd9ff, #cfffd5, #ffe0b2);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #menuView, #gameView { width: 95%; max-width: 800px; padding: 20px; text-align: center; }
+        .hidden { display: none !important; }
+
+        .level-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .level-btn {
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            border-radius: 20px;
+            border: 3px solid var(--accent);
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .level-btn.active {
+            background: var(--accent);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 35px;
+            padding: 30px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .single-image { width: 280px; height: 280px; margin: 0 auto 15px; cursor: pointer; transition: transform 0.2s; }
+        .single-image:hover { transform: scale(1.05); }
+        .single-image img { width: 100%; height: 100%; object-fit: contain; border-radius: 20px; }
+        
+        .word-slot { font-size: 5rem; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; font-weight: bold; }
+        .drop-target {
+            min-width: 120px;
+            height: 110px;
+            border-bottom: 10px solid #333;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 10px;
+            color: var(--consonant-color);
+        }
+
+        .choices-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; }
+        .choice-btn {
+            width: 100px; height: 100px; background: white; border: 3px solid #eee;
+            font-size: 2.8rem; border-radius: 25px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 8px 0 #ddd;
+            transition: all 0.1s;
+            font-weight: bold;
+            color: var(--consonant-color);
+        }
+        .choice-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #ddd; }
+
+        #toast {
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: white; padding: 12px 30px;
+            border-radius: 50px; font-size: 1.8rem; font-weight: bold;
+            opacity: 0; transition: all 0.4s; z-index: 10;
+            pointer-events: none;
+        }
+        #toast.show { opacity: 1; top: 15px; }
+
+        .btn-action {
+            background: var(--success); color: white;
+            padding: 18px 50px; font-size: 1.8rem;
+            border-radius: 100px; border: none; cursor: pointer;
+            box-shadow: 0 8px 0 #2e7d32;
+            font-weight: bold;
+            transition: 0.1s;
+        }
+        .btn-action:active { transform: translateY(4px); box-shadow: 0 2px 0 #2e7d32; }
+
+        @media (max-width: 600px) {
+            .word-slot { font-size: 3.5rem; }
+            .choice-btn { width: 75px; height: 75px; font-size: 2rem; }
+            .single-image { width: 220px; height: 220px; }
+            .drop-target { min-width: 80px; height: 80px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menuView">
+        <h1 style="font-size: 3rem; color: #333; margin-top: 40px;">🎯 Digraphs - sh / ch / th / wh / ph / ck</h1>
+        <p style="font-size: 1.3rem;">Listen to the sound and pick the letters!</p>
+        
+        <div class="level-selector">
+            <button class="level-btn active" onclick="setLevel(1, this)">Level 1 (3択)</button>
+            <button class="level-btn" onclick="setLevel(2, this)">Level 2 (4択)</button>
+            <button class="level-btn" onclick="setLevel(3, this)">Level 3 (5択)</button>
+        </div>
+
+        <button class="btn-action" style="margin-top: 20px;" onclick="startGame()">Start! 🚀</button>
+    </div>
+
+    <div id="gameView" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;">
+            <button onclick="showMenu()" style="cursor:pointer; background:none; border:none; color:#666; font-size:1.2rem; font-weight:bold;">← Menu</button>
+            <div id="progressText" style="font-size: 1.5rem; font-weight: bold; background:white; padding:8px 20px; border-radius:20px; box-shadow: 0 4px 0 #ddd;">1 / 18</div>
+        </div>
+        
+        <div class="game-card">
+            <div id="toast">Amazing! ✨</div>
+            <div class="single-image" onclick="speakWord(currentQuestion.word)">
+                <img id="gameImg" src="" alt="target">
+            </div>
+            <div class="word-slot" id="wordContainer"></div>
+            <div class="choices-container" id="choicesArea"></div>
+            <button id="nextBtn" class="btn-action hidden" onclick="nextQuestion()">Next! →</button>
+        </div>
+    </div>
+
+    <script>
+        const digraphs = ['sh', 'ch', 'th', 'wh', 'ph', 'ck'];
+        const imagePath = "images-digraphs_sh-and-others/"; // フォルダ名修正
+        
+        const wordData = {
+            sh: ['brush', 'fish', 'push', 'shell', 'ship', 'shop'],
+            ch: ['bench', 'check', 'cheese', 'chick', 'chin', 'lunch'],
+            th: ['bath', 'throw', 'tooth', 'thunder', 'brother', 'mother', 'that', 'this'],
+            wh: ['whale', 'whip', 'whiskers'],
+            ph: ['trophy', 'dolphin', 'photo', 'elephant', 'alphabet', 'phone'],
+            ck: ['clock', 'socks', 'sick', 'back', 'kick', 'truck']
+        };
+
+        let allWords = [];
+        for (let target in wordData) {
+            wordData[target].forEach(w => {
+                allWords.push({ word: w, target: target });
+            });
+        }
+
+        let currentLevel = 1;
+        let gameQueue = [];
+        let currentQuestion = null;
+        const praiseWords = ["Great! ✨", "Amazing! 🌟", "Good Job! 👍", "Perfect! 🎯"];
+
+        function setLevel(lv, btn) {
+            currentLevel = lv;
+            document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function speakWord(text) {
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = "en-US";
+            uttr.rate = 0.7;
+            synth.speak(uttr);
+        }
+
+        function startGame() {
+            document.getElementById('menuView').classList.add('hidden');
+            document.getElementById('gameView').classList.remove('hidden');
+            // シャッフルして18問抽出
+            gameQueue = [...allWords].sort(() => 0.5 - Math.random()).slice(0, 18);
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if (gameQueue.length === 0) {
+                finishGame();
+                return;
+            }
+
+            currentQuestion = gameQueue.pop();
+            const { word, target } = currentQuestion;
+
+            document.getElementById('progressText').textContent = `${18 - gameQueue.length} / 18`;
+            document.getElementById('gameImg').src = `${imagePath}${word}.jpg`;
+            document.getElementById('nextBtn').classList.add('hidden');
+            document.getElementById('toast').classList.remove('show');
+            
+            const container = document.getElementById('wordContainer');
+            // 単語の先頭か末尾、どちらにターゲットがあるか判定
+            if (word.startsWith(target)) {
+                container.innerHTML = `<div id="dropTarget" class="drop-target">?</div><span>${word.substring(target.length)}</span>`;
+            } else if (word.endsWith(target)) {
+                container.innerHTML = `<span>${word.substring(0, word.length - target.length)}</span><div id="dropTarget" class="drop-target">?</div>`;
+            } else {
+                // dolphinやelephantなど、ターゲットが中間にくる場合
+                const parts = word.split(target);
+                container.innerHTML = `<span>${parts[0]}</span><div id="dropTarget" class="drop-target">?</div><span>${parts[1]}</span>`;
+            }
+
+            renderChoices(target);
+        }
+
+        function renderChoices(correctAnswer) {
+            const area = document.getElementById('choicesArea');
+            area.innerHTML = '';
+            
+            let choiceCount = currentLevel + 2; 
+            let choices = [correctAnswer];
+            
+            while (choices.length < choiceCount) {
+                let randomTarget = digraphs[Math.floor(Math.random() * digraphs.length)];
+                if (!choices.includes(randomTarget)) choices.push(randomTarget);
+            }
+
+            choices.sort(() => 0.5 - Math.random()).forEach(choice => {
+                const btn = document.createElement('div');
+                btn.className = 'choice-btn';
+                btn.textContent = choice;
+                btn.onclick = () => checkAnswer(choice);
+                area.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected) {
+            if (!document.getElementById('nextBtn').classList.contains('hidden')) return;
+
+            if (selected === currentQuestion.target) {
+                document.getElementById('dropTarget').textContent = selected;
+                document.getElementById('dropTarget').style.color = 'var(--success)';
+                
+                const toast = document.getElementById('toast');
+                toast.textContent = praiseWords[Math.floor(Math.random() * praiseWords.length)];
+                toast.classList.add('show');
+                
+                document.getElementById('nextBtn').classList.remove('hidden');
+                speakWord(currentQuestion.word);
+                confetti({ particleCount: 50, spread: 70, origin: { y: 0.8 } });
+            } else {
+                speakWord(selected);
+                // 間違えた時はターゲットを少し震わせるなどの演出も可能
+            }
+        }
+
+        function finishGame() {
+            speakWord("Excellent! You did a great job!");
+            confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
+            setTimeout(() => {
+                alert("🏆 Congratulations! All 18 Questions Cleared!");
+                showMenu();
+            }, 800);
+        }
+
+        function showMenu() {
+            document.getElementById('gameView').classList.add('hidden');
+            document.getElementById('menuView').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
