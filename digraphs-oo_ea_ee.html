@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digraphs - oo / ea / ee</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --vowel-color: #ff0000;
+            --consonant-color: #0000ff;
+            --success: #4caf50;
+            --accent: #ff9800;
+            --wrong: #f44336;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background: linear-gradient(-45deg, #fff9c4, #cfd9ff, #cfffd5, #ffe0b2);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #menuView, #gameView { width: 95%; max-width: 800px; padding: 20px; text-align: center; }
+        .hidden { display: none !important; }
+
+        .level-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .level-btn {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            border-radius: 20px;
+            border: 3px solid var(--accent);
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .level-btn.active {
+            background: var(--accent);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 35px;
+            padding: 30px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .single-image { width: 280px; height: 280px; margin: 0 auto 15px; cursor: pointer; }
+        .single-image img { width: 100%; height: 100%; object-fit: contain; border-radius: 20px; }
+        
+        .word-slot { font-size: 4.5rem; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; font-weight: bold; color: #333; }
+        .drop-target {
+            min-width: 140px;
+            height: 100px;
+            border-bottom: 8px solid #333;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 10px;
+            color: var(--consonant-color);
+        }
+
+        .choices-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; }
+        .choice-btn {
+            width: 140px; height: 80px; background: white; border: 3px solid #eee;
+            font-size: 2.8rem; border-radius: 25px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 8px 0 #ddd;
+            transition: all 0.1s;
+            font-weight: bold;
+            color: var(--consonant-color);
+        }
+        .choice-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #ddd; }
+
+        .ox-container { display: flex; justify-content: center; gap: 40px; }
+        .ox-btn {
+            width: 120px; height: 120px; border-radius: 50%; font-size: 4rem;
+            border: none; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+        }
+        .btn-o { background: var(--success); }
+        .btn-x { background: var(--wrong); }
+
+        #toast {
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: white; padding: 12px 30px;
+            border-radius: 50px; font-size: 1.8rem; font-weight: bold;
+            opacity: 0; transition: all 0.4s; z-index: 10;
+        }
+        #toast.show { opacity: 1; top: 15px; }
+
+        .btn-action {
+            background: var(--success); color: white;
+            padding: 18px 50px; font-size: 1.8rem;
+            border-radius: 100px; border: none; cursor: pointer;
+            box-shadow: 0 8px 0 #2e7d32;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menuView">
+        <h1 style="font-size: 3rem; color: #333; margin-top: 40px;">🎯 Digraphs - oo / ea / ee</h1>
+        
+        <div class="level-selector">
+            <button class="level-btn active" onclick="setLevel(1, this)">Level 1 (2 Choices)</button>
+            <button class="level-btn" onclick="setLevel(2, this)">Level 2 (3 Choices)</button>
+            <button class="level-btn" onclick="setLevel(3, this)">Level 3 (True or False)</button>
+        </div>
+
+        <button class="btn-action" style="margin-top: 20px;" onclick="startGame()">Start! 🚀</button>
+    </div>
+
+    <div id="gameView" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;">
+            <button onclick="showMenu()" style="cursor:pointer; background:none; border:none; color:#666; font-size:1.2rem; font-weight:bold;">← Menu</button>
+            <div id="progressText" style="font-size: 1.5rem; font-weight: bold; background:white; padding:8px 20px; border-radius:20px; box-shadow: 0 4px 0 #ddd;">1 / 12</div>
+        </div>
+        
+        <div class="game-card">
+            <div id="toast">Amazing! ✨</div>
+            <div class="single-image" onclick="speakWord(currentQuestion.word)">
+                <img id="gameImg" src="" alt="target">
+            </div>
+            <div class="word-slot" id="wordContainer"></div>
+            <div id="interactionArea"></div>
+            <button id="nextBtn" class="btn-action hidden" onclick="nextQuestion()">Next! →</button>
+        </div>
+    </div>
+
+    <script>
+        const imagePath = "images-digraphs_oo_ea_ee/";
+        const wordData = {
+            'oo (short)': ['hook', 'cook', 'foot', 'books', 'look', 'wood'],
+            'oo (long)': ['roof', 'pool', 'broom', 'spoon', 'moon', 'boots'],
+            'ea': ['sea', 'weak', 'tea', 'read', 'speak', 'eat'],
+            'ee': ['seeds', 'bee', 'week', 'tree', 'sleep', 'queen']
+        };
+
+        let currentLevel = 1;
+        let gameQueue = [];
+        let currentQuestion = null;
+        const praiseWords = ["Great! ✨", "Amazing! 🌟", "Good Job! 👍", "Perfect! 🎯"];
+
+        function setLevel(lv, btn) {
+            currentLevel = lv;
+            document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // シャッフル用関数 (Fisher-Yates)
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function speakWord(text) {
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            let speechText = text.toLowerCase() === 'read' ? 'reed' : text;
+            const uttr = new SpeechSynthesisUtterance(speechText);
+            uttr.lang = "en-US";
+            uttr.rate = 0.8; 
+            uttr.pitch = 1; // 怖くない、落ち着いた女性の声
+            synth.speak(uttr);
+        }
+
+        function startGame() {
+            document.getElementById('menuView').classList.add('hidden');
+            document.getElementById('gameView').classList.remove('hidden');
+            gameQueue = [];
+            for (let cat in wordData) {
+                let shuffledCat = shuffle([...wordData[cat]]);
+                shuffledCat.slice(0, 3).forEach(w => {
+                    gameQueue.push({ word: w, target: cat });
+                });
+            }
+            shuffle(gameQueue);
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if (gameQueue.length === 0) {
+                finishGame();
+                return;
+            }
+            currentQuestion = gameQueue.pop();
+            document.getElementById('progressText').textContent = `${12 - gameQueue.length} / 12`;
+            document.getElementById('gameImg').src = `${imagePath}${currentQuestion.word}.jpg`;
+            document.getElementById('nextBtn').classList.add('hidden');
+            document.getElementById('toast').classList.remove('show');
+            setupStage();
+        }
+
+        function setupStage() {
+            const container = document.getElementById('wordContainer');
+            const interaction = document.getElementById('interactionArea');
+            container.innerHTML = '';
+            interaction.innerHTML = '';
+
+            const realLetters = currentQuestion.target.includes('oo') ? 'oo' : currentQuestion.target;
+
+            if (currentLevel === 3) {
+                const isCorrectCase = Math.random() > 0.5;
+                let displayLetters = realLetters;
+                if (!isCorrectCase) {
+                    const others = ['oo', 'ee', 'ea'].filter(d => d !== realLetters);
+                    displayLetters = others[Math.floor(Math.random() * others.length)];
+                }
+                
+                // ? ではなく、最初から文字を見せる
+                container.innerHTML = currentQuestion.word.replace(realLetters, `<div id="dropTarget" class="drop-target" style="color:var(--accent); border:none;">${displayLetters}</div>`);
+                
+                interaction.innerHTML = `
+                    <div class="ox-container">
+                        <button class="ox-btn btn-o" onclick="checkOX(true, ${isCorrectCase})">◯</button>
+                        <button class="ox-btn btn-x" onclick="checkOX(false, ${isCorrectCase})">×</button>
+                    </div>`;
+            } else {
+                container.innerHTML = currentQuestion.word.replace(realLetters, `<div id="dropTarget" class="drop-target">?</div>`);
+                renderChoices(realLetters);
+            }
+        }
+
+        function renderChoices(correctLetters) {
+            const area = document.getElementById('interactionArea');
+            const choicesContainer = document.createElement('div');
+            choicesContainer.className = 'choices-container';
+            
+            let choiceCount = currentLevel + 1; 
+            const all = ['oo', 'ee', 'ea'];
+            let choices = [correctLetters];
+            
+            while (choices.length < choiceCount && choices.length < all.length) {
+                let rand = all[Math.floor(Math.random() * all.length)];
+                if (!choices.includes(rand)) choices.push(rand);
+            }
+
+            shuffle(choices); // 徹底的にシャッフル
+
+            choices.forEach(choice => {
+                const btn = document.createElement('div');
+                btn.className = 'choice-btn';
+                btn.textContent = choice;
+                btn.onclick = () => checkAnswer(choice, correctLetters);
+                choicesContainer.appendChild(btn);
+            });
+            area.appendChild(choicesContainer);
+        }
+
+        function checkAnswer(selected, correctLetters) {
+            if (selected === correctLetters) {
+                successAction();
+                const targetEl = document.getElementById('dropTarget');
+                targetEl.textContent = selected;
+                targetEl.style.color = 'var(--success)';
+                targetEl.style.border = 'none';
+            } else {
+                speakWord("Try again");
+            }
+        }
+
+        function checkOX(userClickedO, isActuallyCorrect) {
+            if (userClickedO === isActuallyCorrect) {
+                if (isActuallyCorrect) {
+                    successAction();
+                    document.getElementById('dropTarget').style.color = 'var(--success)';
+                } else {
+                    speakWord("That's right! It's wrong. Now choose the correct one.");
+                    document.getElementById('interactionArea').innerHTML = '';
+                    // 文字を？に戻して選択肢を出す
+                    document.getElementById('dropTarget').textContent = '?';
+                    document.getElementById('dropTarget').style.color = 'var(--consonant-color)';
+                    document.getElementById('dropTarget').style.borderBottom = '8px solid #333';
+                    const realLetters = currentQuestion.target.includes('oo') ? 'oo' : currentQuestion.target;
+                    renderChoices(realLetters);
+                }
+            } else {
+                speakWord("No, try again");
+            }
+        }
+
+        function successAction() {
+            const toast = document.getElementById('toast');
+            toast.textContent = praiseWords[Math.floor(Math.random() * praiseWords.length)];
+            toast.classList.add('show');
+            document.getElementById('nextBtn').classList.remove('hidden');
+            speakWord(currentQuestion.word);
+            confetti({ particleCount: 50, spread: 70, origin: { y: 0.8 } });
+        }
+
+        function finishGame() {
+            speakWord("Excellent! You did it!");
+            confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
+            setTimeout(() => { alert("🏆 Activity Complete!"); showMenu(); }, 1000);
+        }
+
+        function showMenu() {
+            document.getElementById('gameView').classList.add('hidden');
+            document.getElementById('menuView').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
