@@ -24,6 +24,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         @keyframes gradientBG {
@@ -32,111 +33,118 @@
             100% { background-position: 0% 50%; }
         }
 
-        #menuView, #gameView { width: 95%; max-width: 800px; padding: 20px; text-align: center; }
+        #menuView, #gameView { width: 95%; max-width: 800px; padding: 10px; text-align: center; }
         .hidden { display: none !important; }
 
-        .level-selector {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-
-        .level-btn {
-            padding: 12px 24px;
-            font-size: 1.1rem;
-            border-radius: 20px;
-            border: 3px solid var(--accent);
-            background: white;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-
-        .level-btn.active {
-            background: var(--accent);
-            color: white;
-            transform: scale(1.1);
-        }
-
+        /* ゲームカードの調整 */
         .game-card {
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 35px;
-            padding: 30px;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+            border-radius: 25px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .single-image { width: 280px; height: 280px; margin: 0 auto 15px; cursor: pointer; }
-        .single-image img { width: 100%; height: 100%; object-fit: contain; border-radius: 20px; }
+        /* 画像サイズをスマホ向けに可変に */
+        .single-image { 
+            width: 240px; 
+            height: 240px; 
+            margin: 0 auto 10px; 
+            cursor: pointer; 
+        }
+        @media (max-height: 700px) {
+            .single-image { width: 180px; height: 180px; }
+            .word-slot { font-size: 3rem !important; margin-bottom: 10px !important; }
+        }
+
+        .single-image img { width: 100%; height: 100%; object-fit: contain; border-radius: 15px; }
         
-        .word-slot { font-size: 4.5rem; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; font-weight: bold; color: #333; }
+        .word-slot { 
+            font-size: 4rem; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            font-weight: bold; 
+            color: #333; 
+        }
+
         .drop-target {
-            min-width: 140px;
-            height: 100px;
-            border-bottom: 8px solid #333;
+            min-width: 100px;
+            height: 70px;
+            border-bottom: 6px solid #333;
             display: flex; justify-content: center; align-items: center;
             margin: 0 10px;
             color: var(--consonant-color);
         }
 
-        .choices-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; }
+        /* ボタン類のコンパクト化 */
+        .choices-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
         .choice-btn {
-            width: 140px; height: 80px; background: white; border: 3px solid #eee;
-            font-size: 2.8rem; border-radius: 25px; cursor: pointer;
+            width: 100px; height: 60px; background: white; border: 3px solid #eee;
+            font-size: 1.8rem; border-radius: 15px; cursor: pointer;
             display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 8px 0 #ddd;
+            box-shadow: 0 5px 0 #ddd;
             transition: all 0.1s;
             font-weight: bold;
             color: var(--consonant-color);
         }
-        .choice-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #ddd; }
+        .choice-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #ddd; }
 
-        .ox-container { display: flex; justify-content: center; gap: 40px; }
+        .ox-container { display: flex; justify-content: center; gap: 25px; margin-bottom: 10px; }
         .ox-btn {
-            width: 120px; height: 120px; border-radius: 50%; font-size: 4rem;
+            width: 80px; height: 80px; border-radius: 50%; font-size: 2.5rem;
             border: none; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.1);
         }
         .btn-o { background: var(--success); }
         .btn-x { background: var(--wrong); }
 
         #toast {
-            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
-            background: var(--accent); color: white; padding: 12px 30px;
-            border-radius: 50px; font-size: 1.8rem; font-weight: bold;
+            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: white; padding: 8px 20px;
+            border-radius: 50px; font-size: 1.4rem; font-weight: bold;
             opacity: 0; transition: all 0.4s; z-index: 10;
         }
-        #toast.show { opacity: 1; top: 15px; }
+        #toast.show { opacity: 1; top: 10px; }
 
         .btn-action {
             background: var(--success); color: white;
-            padding: 18px 50px; font-size: 1.8rem;
+            padding: 12px 40px; font-size: 1.5rem;
             border-radius: 100px; border: none; cursor: pointer;
-            box-shadow: 0 8px 0 #2e7d32;
+            box-shadow: 0 6px 0 #2e7d32;
             font-weight: bold;
+        }
+
+        /* レベル選択ボタンの縮小 */
+        .level-btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            border-radius: 15px;
         }
     </style>
 </head>
 <body>
 
     <div id="menuView">
-        <h1 style="font-size: 3rem; color: #333; margin-top: 40px;">🎯 Digraphs - oo / ea / ee</h1>
+        <h1 style="font-size: 2.2rem; color: #333; margin-top: 20px;">🎯 Digraphs</h1>
         
         <div class="level-selector">
-            <button class="level-btn active" onclick="setLevel(1, this)">Level 1 (2 Choices)</button>
-            <button class="level-btn" onclick="setLevel(2, this)">Level 2 (3 Choices)</button>
-            <button class="level-btn" onclick="setLevel(3, this)">Level 3 (True or False)</button>
+            <button class="level-btn active" onclick="setLevel(1, this)">Lv 1</button>
+            <button class="level-btn" onclick="setLevel(2, this)">Lv 2</button>
+            <button class="level-btn" onclick="setLevel(3, this)">Lv 3</button>
         </div>
 
-        <button class="btn-action" style="margin-top: 20px;" onclick="startGame()">Start! 🚀</button>
+        <button class="btn-action" onclick="startGame()">Start! 🚀</button>
     </div>
 
     <div id="gameView" class="hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;">
-            <button onclick="showMenu()" style="cursor:pointer; background:none; border:none; color:#666; font-size:1.2rem; font-weight:bold;">← Menu</button>
-            <div id="progressText" style="font-size: 1.5rem; font-weight: bold; background:white; padding:8px 20px; border-radius:20px; box-shadow: 0 4px 0 #ddd;">1 / 12</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px;">
+            <button onclick="showMenu()" style="cursor:pointer; background:none; border:none; color:#666; font-size:1rem; font-weight:bold;">← Menu</button>
+            <div id="progressText" style="font-size: 1.1rem; font-weight: bold; background:white; padding:5px 15px; border-radius:15px;">1 / 12</div>
         </div>
         
         <div class="game-card">
@@ -170,7 +178,6 @@
             btn.classList.add('active');
         }
 
-        // シャッフル用関数 (Fisher-Yates)
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -186,7 +193,7 @@
             const uttr = new SpeechSynthesisUtterance(speechText);
             uttr.lang = "en-US";
             uttr.rate = 0.8; 
-            uttr.pitch = 1; // 怖くない、落ち着いた女性の声
+            uttr.pitch = 0.9; 
             synth.speak(uttr);
         }
 
@@ -233,7 +240,6 @@
                     displayLetters = others[Math.floor(Math.random() * others.length)];
                 }
                 
-                // ? ではなく、最初から文字を見せる
                 container.innerHTML = currentQuestion.word.replace(realLetters, `<div id="dropTarget" class="drop-target" style="color:var(--accent); border:none;">${displayLetters}</div>`);
                 
                 interaction.innerHTML = `
@@ -260,8 +266,7 @@
                 let rand = all[Math.floor(Math.random() * all.length)];
                 if (!choices.includes(rand)) choices.push(rand);
             }
-
-            shuffle(choices); // 徹底的にシャッフル
+            shuffle(choices);
 
             choices.forEach(choice => {
                 const btn = document.createElement('div');
@@ -291,17 +296,16 @@
                     successAction();
                     document.getElementById('dropTarget').style.color = 'var(--success)';
                 } else {
-                    speakWord("That's right! It's wrong. Now choose the correct one.");
+                    speakWord("That's right! Find the correct one.");
                     document.getElementById('interactionArea').innerHTML = '';
-                    // 文字を？に戻して選択肢を出す
                     document.getElementById('dropTarget').textContent = '?';
                     document.getElementById('dropTarget').style.color = 'var(--consonant-color)';
-                    document.getElementById('dropTarget').style.borderBottom = '8px solid #333';
+                    document.getElementById('dropTarget').style.borderBottom = '6px solid #333';
                     const realLetters = currentQuestion.target.includes('oo') ? 'oo' : currentQuestion.target;
                     renderChoices(realLetters);
                 }
             } else {
-                speakWord("No, try again");
+                speakWord("Think again");
             }
         }
 
@@ -311,13 +315,13 @@
             toast.classList.add('show');
             document.getElementById('nextBtn').classList.remove('hidden');
             speakWord(currentQuestion.word);
-            confetti({ particleCount: 50, spread: 70, origin: { y: 0.8 } });
+            confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
         }
 
         function finishGame() {
-            speakWord("Excellent! You did it!");
-            confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
-            setTimeout(() => { alert("🏆 Activity Complete!"); showMenu(); }, 1000);
+            speakWord("Great job!");
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+            setTimeout(() => { alert("🏆 Complete!"); showMenu(); }, 1000);
         }
 
         function showMenu() {
