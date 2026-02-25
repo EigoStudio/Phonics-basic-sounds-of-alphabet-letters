@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Three Letter Words - Part 1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --accent-pink: #FF4081;
+            --accent-blue: #2196F3;
+            --accent-green: #4CAF50;
+            --en-font: "Chalkboard SE", "Comic Sans MS", "Comic Sans", "Arial", sans-serif;
+        }
+
+        body {
+            font-family: 'Kosugi Maru', var(--en-font);
+            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .main-title { color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2.2rem; margin-bottom: 10px; }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            width: 95%;
+            max-width: 1000px;
+            padding: 25px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .q-image {
+            width: 250px; height: 250px; object-fit: contain;
+            border-radius: 20px; background: white; padding: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px;
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .q-image:active { transform: scale(0.95); }
+
+        /* 並べ替え用スロット */
+        .letter-slots { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; }
+        .slot {
+            width: 80px; height: 100px; background: #fff; border: 4px dashed #ccc;
+            border-radius: 15px; font-size: 4rem; display: flex; align-items: center;
+            justify-content: center; font-family: var(--en-font); font-weight: bold;
+            color: var(--accent-blue); cursor: pointer;
+        }
+        .slot.active { border-color: var(--accent-pink); background: #fff9fb; }
+        .slot.filled { border-style: solid; border-color: var(--accent-blue); }
+
+        /* 単語選択バンク (バブル) */
+        .word-bank { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; }
+        
+        /* 1-5問目の文字ボタン */
+        .char-btn {
+            width: 70px; height: 70px; background: white; border: 3px solid #FFD54F;
+            border-radius: 50%; font-size: 2.5rem; font-family: var(--en-font);
+            font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #FFB300;
+        }
+        .char-btn.used { background: #e0e0e0; border-color: #bdbdbd; box-shadow: none; color: #9e9e9e; pointer-events: none; }
+
+        /* センテンス表示（第6問） */
+        .sentence-box { font-size: 2.5rem; font-family: var(--en-font); font-weight: bold; line-height: 1.6; padding: 20px; white-space: nowrap; }
+        .sit-highlight { color: #E91E63; text-decoration: underline; }
+        .ting-fade { color: #9e9e9e; font-size: 2.2rem; }
+
+        /* 穴埋め用（第7問） */
+        .fill-box {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 100px; height: 65px; border-bottom: 4px solid #aaa;
+            margin: 0 10px; cursor: pointer; color: var(--accent-blue);
+            font-family: var(--en-font); font-size: 2.2rem; font-weight: bold;
+        }
+        .fill-box.active { border-bottom-color: var(--accent-pink); background: #fffde7; }
+
+        /* 第7問の選択単語バブル */
+        .word-choice {
+            min-width: 80px; padding: 10px 25px; background: #fff; border: 3px solid var(--accent-blue);
+            border-radius: 20px; font-family: var(--en-font); font-size: 2rem; font-weight: bold; 
+            cursor: pointer; box-shadow: 0 5px 0 #1976D2; margin: 8px; transition: transform 0.1s;
+        }
+        .word-choice:active { transform: translateY(4px); box-shadow: none; }
+        .word-choice.used { opacity: 0.3; pointer-events: none; box-shadow: none; }
+
+        .action-btn {
+            background: linear-gradient(to right, #FF4081, #FFD54F);
+            color: white; border: none; padding: 15px 40px; border-radius: 50px;
+            font-size: 1.5rem; font-weight: bold; cursor: pointer; box-shadow: 0 6px 0 #D81B60;
+        }
+
+        @media (max-width: 800px) {
+            .sentence-box { white-space: normal; font-size: 1.5rem; }
+            .q-image { width: 180px; height: 180px; }
+            .word-choice { font-size: 1.5rem; padding: 8px 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<h1 class="main-title">Three Letter Words (Part 1)</h1>
+
+<div class="container">
+    <div id="game-ui">
+        <div id="progress" style="font-weight:bold; color:#666; margin-bottom:10px;">Q1 / 7</div>
+        <div id="image-area"><img id="qImg" src="" class="q-image" onclick="clickToSpeak()"></div>
+        <div id="resultMsg" style="font-size: 1.5rem; height: 40px; margin-bottom: 10px; font-weight: bold;"></div>
+
+        <div id="letter-area">
+            <div class="letter-slots">
+                <div id="slot0" class="slot active" onclick="setActiveSlot(0)"></div>
+                <div id="slot1" class="slot" onclick="setActiveSlot(1)"></div>
+                <div id="slot2" class="slot" onclick="setActiveSlot(2)"></div>
+            </div>
+            <div class="word-bank" id="charBank"></div>
+        </div>
+
+        <div id="sentence-area" style="display:none;">
+            <div class="sentence-box">
+                A <span style="color:#FF9800;">fat</span> <span style="color:#795548;">dog</span> is 
+                <span class="sit-highlight">sit</span><span class="ting-fade">ting</span> on a 
+                <span style="color:#03A9F4;">wet</span> <span style="color:#8BC34A;">rug</span>.
+            </div>
+        </div>
+
+        <div id="completion-area" style="display:none;">
+            <div class="sentence-box">
+                A <div id="fill0" class="fill-box active" onclick="setActiveFill(0)"></div> 
+                <div id="fill1" class="fill-box" onclick="setActiveFill(1)"></div> is 
+                <div id="fill2" class="fill-box" onclick="setActiveFill(2)"></div>ting on a 
+                <div id="fill3" class="fill-box" onclick="setActiveFill(3)"></div> 
+                <div id="fill4" class="fill-box" onclick="setActiveFill(4)"></div>.
+            </div>
+            <div class="word-bank" id="wordChoices"></div>
+        </div>
+
+        <div id="control-area">
+            <button class="action-btn" id="nextBtn" style="display:none;" onclick="handleNext()">Next →</button>
+            <button class="action-btn" id="checkBtn" onclick="checkAnswer()">Check!</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const folder = "images-three-letter-words/";
+const quizData = [
+    { type: 'spell', word: "fat", pool: ["f", "a", "t", "s", "o"] },
+    { type: 'spell', word: "dog", pool: ["d", "o", "g", "b", "p"] },
+    { type: 'spell', word: "sit", pool: ["s", "i", "t", "e", "f"] },
+    { type: 'spell', word: "wet", pool: ["w", "e", "t", "v", "a"] },
+    { type: 'spell', word: "rug", pool: ["r", "u", "g", "n", "m"] },
+    { type: 'read', word: "fat-dog-sit-wet-rug" },
+    { type: 'complete', word: "fat-dog-sit-wet-rug", answers: ["fat", "dog", "sit", "wet", "rug"] }
+];
+
+let currentIdx = 0, activeSlotIdx = 0, userSpell = ["", "", ""], userComplete = ["", "", "", "", ""];
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function clickToSpeak() {
+    const data = quizData[currentIdx];
+    if (data.type === 'spell') speak(data.word);
+    else speak("A fat dog is sitting on a wet rug.");
+}
+
+function renderQuestion() {
+    const data = quizData[currentIdx];
+    document.getElementById('progress').textContent = `Q${currentIdx + 1} / 7`;
+    document.getElementById('qImg').src = `${folder}${data.word}.jpg`;
+    document.getElementById('resultMsg').textContent = "";
+    document.getElementById('nextBtn').style.display = "none";
+    document.getElementById('checkBtn').style.display = "inline-block";
+
+    document.getElementById('letter-area').style.display = (data.type === 'spell') ? "block" : "none";
+    document.getElementById('sentence-area').style.display = (data.type === 'read') ? "block" : "none";
+    document.getElementById('completion-area').style.display = (data.type === 'complete') ? "block" : "none";
+
+    if (data.type === 'spell') {
+        userSpell = ["", "", ""]; activeSlotIdx = 0; updateSpellSlots();
+        const bank = document.getElementById('charBank');
+        bank.innerHTML = "";
+        shuffle([...data.pool]).forEach((char, i) => {
+            const btn = document.createElement('button');
+            btn.className = "char-btn"; btn.textContent = char; btn.id = `spell-btn-${i}`;
+            btn.onclick = () => {
+                if (userSpell[activeSlotIdx] === "") {
+                    userSpell[activeSlotIdx] = { text: char, btnId: `spell-btn-${i}` };
+                    document.getElementById(`spell-btn-${i}`).classList.add('used');
+                    if (activeSlotIdx < 2) activeSlotIdx++;
+                    updateSpellSlots();
+                }
+            };
+            bank.appendChild(btn);
+        });
+    } else if (data.type === 'complete') {
+        userComplete = ["", "", "", "", ""]; activeSlotIdx = 0; updateFillSlots();
+        const choiceBank = document.getElementById('wordChoices');
+        choiceBank.innerHTML = "";
+        shuffle([...data.answers]).forEach((word, i) => {
+            const btn = document.createElement('div');
+            btn.className = "word-choice"; btn.textContent = word; btn.id = `word-choice-${i}`;
+            btn.onclick = () => {
+                if (userComplete[activeSlotIdx] === "") {
+                    userComplete[activeSlotIdx] = { text: word, btnId: `word-choice-${i}` };
+                    document.getElementById(`word-choice-${i}`).classList.add('used');
+                    if (activeSlotIdx < 4) activeSlotIdx++;
+                    updateFillSlots();
+                }
+            };
+            choiceBank.appendChild(btn);
+        });
+    }
+}
+
+function updateSpellSlots() {
+    for (let i = 0; i < 3; i++) {
+        const slot = document.getElementById(`slot${i}`);
+        slot.textContent = userSpell[i] ? userSpell[i].text : "";
+        slot.className = `slot ${i === activeSlotIdx ? 'active' : ''} ${userSpell[i] ? 'filled' : ''}`;
+    }
+}
+
+function updateFillSlots() {
+    for (let i = 0; i < 5; i++) {
+        const box = document.getElementById(`fill${i}`);
+        box.textContent = userComplete[i] ? userComplete[i].text : "";
+        box.className = `fill-box ${i === activeSlotIdx ? 'active' : ''}`;
+    }
+}
+
+function setActiveSlot(idx) { activeSlotIdx = idx; updateSpellSlots(); }
+function setActiveFill(idx) { activeSlotIdx = idx; updateFillSlots(); }
+
+function checkAnswer() {
+    const data = quizData[currentIdx];
+    let isCorrect = false;
+
+    if (data.type === 'spell') {
+        isCorrect = userSpell.map(o => o.text).join("") === data.word;
+    } else if (data.type === 'read') {
+        isCorrect = true;
+    } else if (data.type === 'complete') {
+        isCorrect = userComplete.every((o, i) => o.text === data.answers[i]);
+    }
+
+    if (isCorrect) {
+        document.getElementById('resultMsg').innerHTML = "<span style='color:var(--accent-green)'>✨ Perfect! ✨</span>";
+        clickToSpeak();
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        document.getElementById('checkBtn').style.display = "none";
+        document.getElementById('nextBtn').style.display = "inline-block";
+        if (currentIdx === 6) { document.getElementById('nextBtn').textContent = "Finish! 🎉"; }
+    } else {
+        document.getElementById('resultMsg').innerHTML = "<span style='color:var(--accent-pink)'>Try again! 🍎</span>";
+    }
+}
+
+function handleNext() {
+    if (currentIdx < 6) { currentIdx++; renderQuestion(); }
+    else { alert("Congratulations! You completed Part 1!"); location.reload(); }
+}
+
+function speak(t) { const u = new SpeechSynthesisUtterance(t); u.lang = "en-US"; u.rate = 0.8; speechSynthesis.speak(u); }
+
+document.querySelectorAll('.slot').forEach((slot, i) => {
+    slot.addEventListener('click', () => { if (userSpell[i]) { document.getElementById(userSpell[i].btnId).classList.remove('used'); userSpell[i] = ""; activeSlotIdx = i; updateSpellSlots(); } });
+});
+document.querySelectorAll('.fill-box').forEach((box, i) => {
+    box.addEventListener('click', () => { if (userComplete[i]) { document.getElementById(userComplete[i].btnId).classList.remove('used'); userComplete[i] = ""; activeSlotIdx = i; updateFillSlots(); } });
+});
+
+renderQuestion();
+</script>
+</body>
+</html>
