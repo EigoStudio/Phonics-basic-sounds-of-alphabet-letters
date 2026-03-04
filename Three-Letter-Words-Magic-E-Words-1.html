@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Three Letter Words & Magic "e" Words</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --accent-pink: #FF4081;
+            --accent-blue: #2196F3;
+            --accent-green: #4CAF50;
+            --magic-gold: #FFD54F;
+            --en-font: "Chalkboard SE", "Comic Sans MS", "Comic Sans", sans-serif;
+            --mute-gray: #aaaaaa;
+        }
+
+        body {
+            font-family: 'Kosugi Maru', var(--en-font);
+            background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px;
+        }
+
+        .main-title { color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2rem; margin-bottom: 10px; text-align: center; }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95); width: 95%; max-width: 1000px; padding: 25px;
+            border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center;
+        }
+
+        .q-image {
+            width: 220px; height: 220px; object-fit: contain; border-radius: 20px; background: white;
+            padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px;
+            cursor: pointer; transition: transform 0.2s;
+        }
+
+        .letter-slots { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+        .slot {
+            width: 70px; height: 90px; background: #fff; border: 4px dashed #ccc;
+            border-radius: 15px; font-size: 3.5rem; display: flex; align-items: center;
+            justify-content: center; font-family: var(--en-font); font-weight: bold;
+            color: var(--accent-blue); cursor: pointer;
+        }
+        .slot.active { border-color: var(--accent-pink); background: #fff9fb; }
+        .slot.filled { border-style: solid; border-color: var(--accent-blue); }
+        .slot.magic-e { border-color: var(--magic-gold); color: #f57c00; }
+
+        .word-bank { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 30px; }
+        .char-btn {
+            width: 65px; height: 65px; background: white; border: 3px solid #FFD54F;
+            border-radius: 50%; font-size: 2.2rem; font-family: var(--en-font);
+            font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #FFB300;
+        }
+        .char-btn.used { background: #e0e0e0; border-color: #bdbdbd; box-shadow: none; color: #9e9e9e; pointer-events: none; }
+
+        .sentence-box { font-size: 2.4rem; font-family: var(--en-font); font-weight: bold; line-height: 1.6; padding: 20px; }
+
+        .fill-box {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 100px; height: 60px; border-bottom: 4px solid #aaa;
+            margin: 0 5px; cursor: pointer; color: var(--accent-blue);
+            font-family: var(--en-font); font-size: 2rem;
+        }
+        .fill-box.active { border-bottom-color: var(--accent-pink); background: #fffde7; }
+        
+        .word-choice {
+            min-width: 90px; padding: 8px 20px; background: #fff; border: 3px solid var(--accent-blue);
+            border-radius: 20px; font-family: var(--en-font); font-size: 1.8rem; font-weight: bold;
+            cursor: pointer; box-shadow: 0 5px 0 #1976D2; margin: 5px;
+        }
+        .word-choice.used { opacity: 0.3; pointer-events: none; box-shadow: none; }
+
+        .action-btn {
+            background: linear-gradient(to right, #FF4081, #FFD54F);
+            color: white; border: none; padding: 15px 45px; border-radius: 50px;
+            font-size: 1.5rem; font-weight: bold; cursor: pointer; box-shadow: 0 6px 0 #D81B60;
+        }
+
+        @media (max-width: 600px) {
+            .sentence-box { font-size: 1.4rem; }
+            .slot { width: 50px; height: 70px; font-size: 2.5rem; }
+            .char-btn { width: 55px; height: 55px; font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<h1 class="main-title">Three Letter Words & Magic "e"</h1>
+
+<div class="container">
+    <div id="game-ui">
+        <div id="progress" style="font-weight:bold; color:#666; margin-bottom:10px;">Q1 / 7</div>
+        <div id="image-area"><img id="qImg" src="" class="q-image" onclick="clickToSpeak()"></div>
+        <div id="resultMsg" style="font-size: 1.5rem; height: 40px; margin-bottom: 10px; font-weight: bold;"></div>
+
+        <div id="letter-area">
+            <div id="slots-container" class="letter-slots"></div>
+            <div class="word-bank" id="charBank"></div>
+        </div>
+
+        <div id="sentence-area" style="display:none;">
+            <div class="sentence-box">
+                A <span style="color:#e91e63;">cute</span> <span style="color:#2196f3;">dog</span> <span style="color:#4caf50;">hid</span> a <span style="color:#f57c00;">bone</span>.
+            </div>
+        </div>
+
+        <div id="completion-area" style="display:none;">
+            <div class="sentence-box">
+                A <div id="fill0" class="fill-box active" onclick="setActiveFill(0)"></div> 
+                <div id="fill1" class="fill-box" onclick="setActiveFill(1)"></div> 
+                <div id="fill2" class="fill-box" onclick="setActiveFill(2)"></div> a 
+                <div id="fill3" class="fill-box" onclick="setActiveFill(3)"></div>.
+            </div>
+            <div class="word-bank" id="wordChoices"></div>
+        </div>
+
+        <div id="control-area">
+            <button class="action-btn" id="nextBtn" style="display:none;" onclick="handleNext()">Next →</button>
+            <button class="action-btn" id="checkBtn" onclick="checkAnswer()">Check!</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const folder = "images-magic-e/"; // 画像フォルダパス
+const quizData = [
+    { type: 'spell', word: "cute", pool: ["c", "u", "t", "e", "i"] },
+    { type: 'spell', word: "dog", pool: ["d", "o", "g", "a", "u"] },
+    { type: 'spell', word: "hid", pool: ["h", "i", "d", "e", "a"] },
+    { type: 'spell', word: "bone", pool: ["b", "o", "n", "e", "u"] },
+    { type: 'read', word: "sentence" },
+    { type: 'complete', word: "sentence", answers: ["cute", "dog", "hid", "bone"] }
+];
+
+let currentIdx = 0, activeSlotIdx = 0, activeFillIdx = 0, userSpell = [], userComplete = [];
+
+function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+}
+
+function clickToSpeak() {
+    const data = quizData[currentIdx];
+    if (data.type === 'spell') speak(data.word);
+    else speak("A cute dog hid a bone.");
+}
+
+function renderQuestion() {
+    const data = quizData[currentIdx];
+    document.getElementById('progress').textContent = `Q${currentIdx + 1} / ${quizData.length}`;
+    document.getElementById('qImg').src = `${folder}${data.word}.jpg`;
+    document.getElementById('resultMsg').textContent = "";
+    document.getElementById('nextBtn').style.display = "none";
+    document.getElementById('checkBtn').style.display = "inline-block";
+
+    const letterArea = document.getElementById('letter-area');
+    const sentenceArea = document.getElementById('sentence-area');
+    const completionArea = document.getElementById('completion-area');
+
+    letterArea.style.display = (data.type === 'spell') ? "block" : "none";
+    sentenceArea.style.display = (data.type === 'read') ? "block" : "none";
+    completionArea.style.display = (data.type === 'complete') ? "block" : "none";
+
+    if (data.type === 'spell') {
+        const len = data.word.length;
+        userSpell = Array(len).fill("");
+        activeSlotIdx = 0;
+        
+        const container = document.getElementById('slots-container');
+        container.innerHTML = "";
+        for(let i=0; i<len; i++) {
+            const s = document.createElement('div');
+            s.id = `slot${i}`; s.className = "slot";
+            s.onclick = () => { if(userSpell[i]) removeLetter(i); activeSlotIdx = i; updateSpellSlots(); };
+            container.appendChild(s);
+        }
+
+        const bank = document.getElementById('charBank');
+        bank.innerHTML = "";
+        shuffle([...data.pool]).forEach((char, i) => {
+            const btn = document.createElement('button');
+            btn.className = "char-btn"; btn.textContent = char; btn.id = `spell-btn-${i}`;
+            btn.onclick = () => {
+                if (userSpell[activeSlotIdx] === "") {
+                    userSpell[activeSlotIdx] = { text: char, btnId: `spell-btn-${i}` };
+                    document.getElementById(`spell-btn-${i}`).classList.add('used');
+                    if (activeSlotIdx < len - 1) activeSlotIdx++;
+                    updateSpellSlots();
+                }
+            };
+            bank.appendChild(btn);
+        });
+        updateSpellSlots();
+    } else if (data.type === 'complete') {
+        userComplete = Array(data.answers.length).fill("");
+        activeFillIdx = 0;
+        const choiceBank = document.getElementById('wordChoices');
+        choiceBank.innerHTML = "";
+        shuffle([...data.answers]).forEach((word, i) => {
+            const btn = document.createElement('div');
+            btn.className = "word-choice"; btn.textContent = word; btn.id = `choice-${i}`;
+            btn.onclick = () => {
+                if (userComplete[activeFillIdx] === "") {
+                    userComplete[activeFillIdx] = { text: word, btnId: `choice-${i}` };
+                    document.getElementById(`choice-${i}`).classList.add('used');
+                    if (activeFillIdx < data.answers.length - 1) activeFillIdx++;
+                    updateFillSlots();
+                }
+            };
+            choiceBank.appendChild(btn);
+        });
+        updateFillSlots();
+    }
+}
+
+function removeLetter(idx) {
+    document.getElementById(userSpell[idx].btnId).classList.remove('used');
+    userSpell[idx] = "";
+    activeSlotIdx = idx;
+    updateSpellSlots();
+}
+
+function updateSpellSlots() {
+    const data = quizData[currentIdx];
+    for (let i = 0; i < data.word.length; i++) {
+        const slot = document.getElementById(`slot${i}`);
+        slot.textContent = userSpell[i] ? userSpell[i].text : "";
+        let cn = `slot ${i === activeSlotIdx ? 'active' : ''} ${userSpell[i] ? 'filled' : ''}`;
+        if (data.word.length > 3 && i === data.word.length - 1) cn += " magic-e";
+        slot.className = cn;
+    }
+}
+
+function updateFillSlots() {
+    for (let i = 0; i < 4; i++) {
+        const box = document.getElementById(`fill${i}`);
+        box.textContent = userComplete[i] ? userComplete[i].text : "";
+        box.className = `fill-box ${i === activeFillIdx ? 'active' : ''}`;
+    }
+}
+
+function setActiveFill(idx) { 
+    if(userComplete[idx]) {
+        document.getElementById(userComplete[idx].btnId).classList.remove('used');
+        userComplete[idx] = "";
+    }
+    activeFillIdx = idx; 
+    updateFillSlots(); 
+}
+
+function checkAnswer() {
+    const data = quizData[currentIdx];
+    let isCorrect = false;
+
+    if (data.type === 'spell') isCorrect = (userSpell.map(o => o.text).join("") === data.word);
+    else if (data.type === 'read') isCorrect = true;
+    else if (data.type === 'complete') isCorrect = userComplete.every((o, i) => o ? o.text === data.answers[i] : false);
+
+    if (isCorrect) {
+        document.getElementById('resultMsg').innerHTML = "<span style='color:var(--accent-green)'>✨ Perfect! ✨</span>";
+        clickToSpeak();
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        document.getElementById('checkBtn').style.display = "none";
+        document.getElementById('nextBtn').style.display = "inline-block";
+        if (currentIdx === quizData.length - 1) document.getElementById('nextBtn').textContent = "Finish! 🎉";
+    } else {
+        document.getElementById('resultMsg').innerHTML = "<span style='color:var(--accent-pink)'>Try again! 🍎</span>";
+    }
+}
+
+function handleNext() {
+    if (currentIdx < quizData.length - 1) { currentIdx++; renderQuestion(); }
+    else { alert("Congratulations! You mastered Magic 'e'!"); location.reload(); }
+}
+
+function speak(t) { const u = new SpeechSynthesisUtterance(t); u.lang = "en-US"; u.rate = 0.7; speechSynthesis.speak(u); }
+
+renderQuestion();
+</script>
+</body>
+</html>
