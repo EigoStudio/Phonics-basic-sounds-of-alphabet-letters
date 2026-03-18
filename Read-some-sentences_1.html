@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sentences</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --accent-pink: #FF4081;
+            --accent-blue: #2196F3;
+            --accent-green: #4CAF50;
+            --en-font: "Chalkboard SE", "Comic Sans MS", "Comic Sans", sans-serif;
+        }
+
+        body {
+            font-family: 'Kosugi Maru', var(--en-font);
+            font-variant-ligatures: none !important;
+            -webkit-font-feature-settings: "liga" 0, "clig" 0 !important;
+            font-feature-settings: "liga" 0, "clig" 0 !important;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95); width: 95%; max-width: 800px; padding: 25px;
+            border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center;
+        }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
+        .menu-btn {
+            padding: 20px; font-size: 1.5rem; font-weight: bold; border: none;
+            border-radius: 15px; cursor: pointer; color: white; transition: 0.2s;
+        }
+        .btn-s1 { background: #FF7043; }
+        .btn-s2 { background: #AB47BC; }
+        .btn-s3 { background: #26A69A; }
+
+        .section-badge {
+            display: inline-block; padding: 5px 15px; background: var(--accent-blue);
+            color: white; border-radius: 20px; font-weight: bold; margin-bottom: 10px;
+        }
+
+        .q-image-container {
+            width: 220px; height: 220px; margin: 0 auto 15px;
+            background: #eee; border-radius: 20px; border: 4px solid #ddd;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; position: relative; overflow: hidden;
+        }
+        .q-image { width: 100%; height: 100%; object-fit: contain; }
+        .speaker-icon { font-size: 5rem; }
+
+        .letter-slots { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .slot {
+            width: 60px; height: 80px; border: 3px dashed #ccc; border-radius: 12px;
+            font-size: 3rem; display: flex; align-items: center; justify-content: center;
+            font-family: var(--en-font); font-weight: bold; color: var(--accent-blue); cursor: pointer;
+        }
+        .slot.active { border-color: var(--accent-pink); background: #fff9fb; }
+        .slot.filled { border-style: solid; border-color: var(--accent-blue); }
+        .slot.correct { border: none; background: transparent; color: var(--accent-green); }
+
+        .word-bank { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 25px; }
+        .char-btn, .word-choice {
+            background: white; border: 3px solid #FFD54F; border-radius: 50%;
+            width: 60px; height: 60px; font-size: 2rem; font-family: var(--en-font);
+            font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #FFB300;
+            letter-spacing: 0.2em; /* リガチャ対策 */
+            padding-left: 0.2em;
+        }
+        .word-choice { border-radius: 20px; width: auto; padding: 0 20px; height: 50px; letter-spacing: 0.05em; }
+        .used { opacity: 0.3; pointer-events: none; box-shadow: none; background: #eee; }
+
+        .sentence-box { font-size: 2.2rem; font-family: var(--en-font); font-weight: bold; line-height: 2; padding: 20px; }
+        .fill-box {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 80px; height: 50px; border-bottom: 4px solid #aaa;
+            margin: 0 5px; cursor: pointer; color: var(--accent-blue);
+        }
+        .fill-box.active { border-bottom-color: var(--accent-pink); background: #fffde7; }
+        .fill-box.correct { border-bottom: none; background: transparent; color: var(--accent-green); cursor: default; }
+
+        .action-btn {
+            background: linear-gradient(to right, #FF4081, #FFD54F);
+            color: white; border: none; padding: 15px 40px; border-radius: 50px;
+            font-size: 1.5rem; font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #D81B60;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="menu-view">
+    <h1 style="color:#333;">Setences</h1>
+    <div class="menu-grid">
+        <button class="menu-btn btn-s1" onclick="startSection(1)">Section 1: ar / all</button>
+        <button class="menu-btn btn-s2" onclick="startSection(2)">Section 2: Magic "e"</button>
+        <button class="menu-btn btn-s3" onclick="startSection(3)">Section 3: sh / ch</button>
+    </div>
+</div>
+
+<div class="container hidden" id="game-view">
+    <div style="text-align: left; margin-bottom: 10px;">
+        <button onclick="location.reload()" style="cursor:pointer; background:none; border:none; color:#666; font-weight:bold;">← Menu</button>
+    </div>
+    <div id="section-info" class="section-badge">Section 1</div>
+    <div id="focus-msg" style="font-size: 1.2rem; color: var(--accent-pink); font-weight: bold; margin-bottom: 10px;"></div>
+    
+    <div class="q-image-container" onclick="clickToSpeak()">
+        <div id="speaker-placeholder" class="speaker-icon">📢</div>
+        <img id="qImg" src="" class="q-image hidden">
+    </div>
+
+    <div id="resultMsg" style="height: 35px; font-weight:bold; margin-bottom:10px;"></div>
+
+    <div id="letter-area">
+        <div id="slots-container" class="letter-slots"></div>
+        <div class="word-bank" id="charBank"></div>
+    </div>
+
+    <div id="completion-area" class="hidden">
+        <div id="sentence-display" class="sentence-box"></div>
+        <div class="word-bank" id="wordChoices"></div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <button class="action-btn" id="checkBtn" onclick="checkAnswer()">Check!</button>
+        <button class="action-btn hidden" id="nextBtn" onclick="handleNext()">Next →</button>
+    </div>
+</div>
+
+<script>
+const folder = "images-combined/";
+const allQuizData = [
+    { section: 1, focus: "ar / all", type: 'spell', word: "tall", pool: ["t", "a", "l", "l", "o"] },
+    { section: 1, focus: "ar / all", type: 'spell', word: "man", pool: ["m", "a", "n", "u", "e"] },
+    { section: 1, focus: "ar / all", type: 'spell', word: "jar", pool: ["j", "a", "r", "u", "i"] },
+    { section: 1, focus: "ar / all", type: 'spell', word: "car", pool: ["c", "a", "r", "e", "o"] },
+    { section: 1, focus: "ar / all", type: 'complete', sentence: "A [0] [1] has a [2] in a [3].", answers: ["tall", "man", "jar", "car"] },
+
+    { section: 2, focus: "Magic \"e\"", type: 'spell', word: "cake", pool: ["c", "a", "k", "e", "i"] },
+    { section: 2, focus: "Magic \"e\"", type: 'spell', word: "bake", pool: ["b", "a", "k", "e", "u"] },
+    { section: 2, focus: "Magic \"e\"", type: 'spell', word: "cute", pool: ["c", "u", "t", "e", "a"] },
+    { section: 2, focus: "Magic \"e\"", type: 'spell', word: "mole", pool: ["m", "o", "l", "e", "u"] },
+    { section: 2, focus: "Magic \"e\"", type: 'complete', sentence: "I [0] a [1] for a [2] [3].", answers: ["bake", "cake", "cute", "mole"] },
+
+    { section: 3, focus: "sh / ch", type: 'spell', word: "rich", pool: ["r", "i", "c", "h", "k"] },
+    { section: 3, focus: "sh / ch", type: 'spell', word: "fish", pool: ["f", "i", "s", "h", "c"] },
+    { section: 3, focus: "sh / ch", type: 'spell', word: "dish", pool: ["d", "i", "s", "h", "p"] },
+    { section: 3, focus: "sh / ch", type: 'complete', sentence: "A [0] [1] has a [2].", answers: ["rich", "fish", "dish"] }
+];
+
+let activeQuizSet = [];
+let currentIdx = 0, activeIdx = 0, userAnswers = [], preferredVoice = null;
+
+function loadVoices() {
+    const voices = window.speechSynthesis.getVoices();
+    preferredVoice = voices.find(v => v.lang === "en-US" && v.name.includes("Google US English")) ||
+                     voices.find(v => v.lang === "en-US" && v.name.includes("Samantha")) ||
+                     voices.find(v => v.lang.startsWith("en-US") && (v.name.includes("Female") || v.name.includes("Zira")));
+}
+window.speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function speak(text) {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const uttr = new SpeechSynthesisUtterance(text);
+    if (preferredVoice) uttr.voice = preferredVoice;
+    uttr.lang = "en-US";
+    uttr.rate = 0.65;
+    uttr.pitch = 1.05;
+    synth.speak(uttr);
+}
+
+function startSection(secNum) {
+    activeQuizSet = allQuizData.filter(q => q.section === secNum);
+    currentIdx = 0;
+    document.getElementById('menu-view').classList.add('hidden');
+    document.getElementById('game-view').classList.remove('hidden');
+    document.getElementById('focus-msg').textContent = `Focus: ${activeQuizSet[0].focus}`;
+    renderQuestion();
+}
+
+function clickToSpeak() {
+    const data = activeQuizSet[currentIdx];
+    if (data.type === 'spell') speak(data.word);
+    else {
+        let text = data.sentence;
+        data.answers.forEach((a, i) => text = text.replace(`[${i}]`, a));
+        speak(text);
+    }
+}
+
+function renderQuestion() {
+    const data = activeQuizSet[currentIdx];
+    document.getElementById('section-info').textContent = `Section ${data.section}`;
+    document.getElementById('resultMsg').textContent = "";
+    document.getElementById('nextBtn').classList.add('hidden');
+    document.getElementById('checkBtn').classList.remove('hidden');
+    document.getElementById('qImg').classList.add('hidden');
+    document.getElementById('speaker-placeholder').classList.remove('hidden');
+
+    if (data.type === 'spell') {
+        document.getElementById('letter-area').classList.remove('hidden');
+        document.getElementById('completion-area').classList.add('hidden');
+        document.getElementById('qImg').src = `${folder}${data.word}.jpg`;
+        initSpelling(data);
+    } else {
+        document.getElementById('letter-area').classList.add('hidden');
+        document.getElementById('completion-area').classList.remove('hidden');
+        document.getElementById('qImg').src = `${folder}section${data.section}.jpg`;
+        initCompletion(data);
+    }
+    setTimeout(clickToSpeak, 500);
+}
+
+function initSpelling(data) {
+    userAnswers = Array(data.word.length).fill("");
+    activeIdx = 0;
+    const container = document.getElementById('slots-container');
+    container.innerHTML = "";
+    for(let i=0; i<data.word.length; i++) {
+        const s = document.createElement('div');
+        s.className = "slot"; s.id = `slot${i}`;
+        s.onclick = () => removeLetter(i);
+        container.appendChild(s);
+    }
+    const bank = document.getElementById('charBank');
+    bank.innerHTML = "";
+    [...data.pool].sort(() => Math.random()-0.5).forEach((char, i) => {
+        const btn = document.createElement('button');
+        btn.className = "char-btn"; btn.textContent = char; btn.id = `btn-${i}`;
+        btn.onclick = () => {
+            if (userAnswers[activeIdx] === "") {
+                userAnswers[activeIdx] = { text: char, btnId: `btn-${i}` };
+                document.getElementById(`btn-${i}`).classList.add('used');
+                findNextEmpty(data.word.length);
+                updateSlots();
+            }
+        };
+        bank.appendChild(btn);
+    });
+    updateSlots();
+}
+
+function initCompletion(data) {
+    userAnswers = Array(data.answers.length).fill("");
+    activeIdx = 0;
+    const display = document.getElementById('sentence-display');
+    let html = data.sentence;
+    data.answers.forEach((_, i) => {
+        html = html.replace(`[${i}]`, `<div id="fill${i}" class="fill-box" onclick="removeLetter(${i})"></div>`);
+    });
+    display.innerHTML = html;
+
+    const bank = document.getElementById('wordChoices');
+    bank.innerHTML = "";
+    [...data.answers].sort(() => Math.random()-0.5).forEach((word, i) => {
+        const btn = document.createElement('button');
+        btn.className = "word-choice"; btn.textContent = word; btn.id = `choice-${i}`;
+        btn.onclick = () => {
+            if (userAnswers[activeIdx] === "") {
+                userAnswers[activeIdx] = { text: word, btnId: `choice-${i}` };
+                document.getElementById(`choice-${i}`).classList.add('used');
+                findNextEmpty(data.answers.length);
+                updateSlots();
+            }
+        };
+        bank.appendChild(btn);
+    });
+    updateSlots();
+}
+
+function findNextEmpty(len) {
+    for(let i=0; i < len; i++) {
+        if(userAnswers[i] === "") { activeIdx = i; return; }
+    }
+}
+
+function updateSlots() {
+    const data = activeQuizSet[currentIdx];
+    if (data.type === 'spell') {
+        for(let i=0; i<data.word.length; i++) {
+            const el = document.getElementById(`slot${i}`);
+            el.textContent = userAnswers[i] ? userAnswers[i].text : "";
+            el.className = `slot ${i === activeIdx ? 'active' : ''} ${userAnswers[i] ? 'filled' : ''}`;
+        }
+    } else {
+        data.answers.forEach((_, i) => {
+            const el = document.getElementById(`fill${i}`);
+            el.textContent = userAnswers[i] ? userAnswers[i].text : "";
+            el.className = `fill-box ${i === activeIdx ? 'active' : ''}`;
+        });
+    }
+}
+
+function removeLetter(i) {
+    if(userAnswers[i]) {
+        document.getElementById(userAnswers[i].btnId).classList.remove('used');
+        userAnswers[i] = "";
+    }
+    activeIdx = i;
+    updateSlots();
+}
+
+function checkAnswer() {
+    const data = activeQuizSet[currentIdx];
+    const userString = userAnswers.map(a => a ? a.text : "").join(data.type === 'spell' ? "" : ",");
+    const correctString = data.type === 'spell' ? data.word : data.answers.join(",");
+
+    if (userString === correctString) {
+        document.getElementById('resultMsg').innerHTML = "<span style='color:var(--accent-green)'>✨ Perfect! ✨</span>";
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        document.getElementById('qImg').classList.remove('hidden');
+        document.getElementById('speaker-placeholder').classList.add('hidden');
+        
+        // ★ 下線を消して完成形を見せる処理
+        if (data.type === 'spell') {
+            for(let i=0; i<data.word.length; i++) document.getElementById(`slot${i}`).className = "slot correct";
+        } else {
+            for(let i=0; i<data.answers.length; i++) document.getElementById(`fill${i}`).className = "fill-box correct";
+        }
+        
+        clickToSpeak();
+        document.getElementById('checkBtn').classList.add('hidden');
+        document.getElementById('nextBtn').classList.remove('hidden');
+    } else {
+        document.getElementById('resultMsg').innerHTML = "<span style='color:var(--accent-pink)'>Try again! 🍎</span>";
+    }
+}
+
+function handleNext() {
+    currentIdx++;
+    if (currentIdx < activeQuizSet.length) renderQuestion();
+    else {
+        alert("Section Cleared!");
+        location.reload();
+    }
+}
+</script>
+</body>
+</html>
