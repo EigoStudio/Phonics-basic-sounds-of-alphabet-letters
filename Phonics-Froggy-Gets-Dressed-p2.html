@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phonics Lesson - Froggy Gets Dressed (p2)</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background: linear-gradient(135deg, #fff9c4, #fff176);
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; margin: 0; text-align: center;
+        }
+        .card {
+            background: white; padding: 40px; border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 85%; max-width: 850px;
+        }
+        .word-display { font-size: 5rem; font-weight: bold; margin: 20px 0; min-height: 140px; }
+        .phrase-display { font-size: 2.8rem; font-weight: bold; color: #2c3e50; line-height: 1.5; }
+        .trans { font-size: 1.6rem; color: #888; margin-bottom: 25px; min-height: 2.5rem; }
+        .unit { display: inline-block; transition: 0.3s; color: #ccc; margin: 0 5px; }
+        .active { color: #fbc02d; transform: scale(1.1); text-decoration: underline; }
+        
+        /* Magic e (薄いグレー) */
+        .magic-e { color: #eee !important; text-decoration: none !important; }
+        .active.magic-e { color: #ddd !important; }
+        
+        /* Silent k (薄いピンク) */
+        .silent-k { color: #f8bbd0 !important; text-decoration: none !important; }
+        .active.silent-k { color: #f48fb1 !important; }
+
+        .btn {
+            padding: 15px 40px; font-size: 1.5rem; border-radius: 50px;
+            border: none; cursor: pointer; margin: 10px; font-weight: bold;
+            box-shadow: 0 6px 0 #bbb; transition: 0.1s;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #bbb; }
+        .btn-yes { background: #2ed573; color: white; box-shadow: 0 6px 0 #26af5c; }
+        .btn-no { background: #ff4757; color: white; box-shadow: 0 6px 0 #d63031; }
+        .btn-next { background: #ffa502; color: white; box-shadow: 0 6px 0 #e67e22; }
+        .btn-audio { background: #2196f3; color: white; box-shadow: 0 6px 0 #1976d2; margin-top: 20px; }
+        .hidden { display: none; }
+
+        /* 全文表示用のコンテナ（左寄せ用） */
+        .story-container {
+            display: inline-block;
+            text-align: left;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="q-text" style="font-size: 1.5rem; color: #555;">Can you read it?</div>
+    <div id="display" class="word-display"></div>
+    <div id="trans" class="trans"></div>
+
+    <div id="btns-init">
+        <button class="btn btn-yes" onclick="ansYes()">Yes! 👍 (よめた！)</button>
+        <button class="btn btn-no" onclick="ansNo()">No 😢 (おしえて)</button>
+    </div>
+    
+    <div id="btns-step" class="hidden">
+        <button class="btn btn-next" onclick="doNext()">Next Step ➔</button>
+    </div>
+
+    <div id="btns-final" class="hidden">
+        <button class="btn btn-yes" id="main-btn" onclick="nextContent()">Next 🚀</button>
+    </div>
+</div>
+
+<script>
+    const wordList = [
+        { w: "go", s: ["go"], t: "いく" },
+        { w: "back", s: ["b", "a", "ck"], t: "もどる" },
+        { w: "to", s: ["to"], t: "〜へ" },
+        { w: "sleep", s: ["sl", "ee", "p"], t: "ねる" },
+        { w: "Froggy", s: ["fr", "og", "gy"], t: "フロッギー" },
+        { w: "said", s: ["said"], t: "いいました" },
+        { w: "his", s: ["h", "is"], t: "かれの" },
+        { w: "mother", s: ["mo", "th", "er"], t: "おかあさん" },
+        { type: "phrase", w: "\"Go back to sleep, Froggy,\"<br>said his mother.", t: "「またおやすみなさい、フロッギー」とお母さんは言いました。" },
+        
+        { w: "don't", s: ["don't"], t: "〜じゃない" },
+        { w: "you", s: ["you"], t: "あなたは" },
+        { w: "know", s: ["k", "n", "ow"], t: "しっている", silent: 0 },
+        { type: "phrase", w: "Don't you know?", t: "知らないの？" },
+
+        { w: "frogs", s: ["fr", "og", "s"], t: "カエルたち" },
+        { w: "are", s: ["are"], t: "〜です" },
+        { w: "supposed", s: ["su", "p", "po", "s", "ed"], t: "〜することになっている" },
+        { w: "all", s: ["all"], t: "ずっと" },
+        { w: "winter", s: ["w", "in", "t", "er"], t: "ふゆ" },
+        { type: "phrase", w: "Frogs are supposed to sleep<br>all winter.", t: "カエルは冬の間ずっと眠っているものなのよ。" },
+
+        { w: "wake", s: ["w", "a", "k", "e"], t: "おきる", magic: 3 },
+        { w: "up", s: ["u", "p"], t: "おきあがる" },
+        { w: "when", s: ["wh", "en"], t: "〜のとき" },
+        { w: "the", s: ["the"], t: "その" },
+        { w: "snow", s: ["sn", "ow"], t: "ゆき" },
+        { w: "melts", s: ["m", "el", "ts"], t: "とける" },
+        { type: "phrase", w: "Wake up when the snow melts.", t: "雪がとけたら起きなさい。" }
+    ];
+
+    let currentIdx = -1;
+    let step = 0;
+
+    function getFemaleVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = ["Google US English", "Microsoft Zira", "Samantha", "Female"];
+        let selected = null;
+        for (let name of preferred) {
+            selected = voices.find(v => (v.lang === 'en-US' || v.lang === 'en_US') && v.name.includes(name));
+            if (selected) break;
+        }
+        return selected || voices.find(v => v.lang.startsWith('en'));
+    }
+
+    function speak(txt, rate = 0.6) { 
+        window.speechSynthesis.cancel();
+        const plainText = txt.replace(/<br>/g, ' ');
+        const u = new SpeechSynthesisUtterance(plainText);
+        const v = getFemaleVoice();
+        if (v) u.voice = v;
+        u.lang = 'en-US';
+        u.rate = rate; 
+        window.speechSynthesis.speak(u);
+    }
+
+    function speakFullStory() {
+        const fullText = `"Go back to sleep, Froggy," said his mother. "Don't you know? Frogs are supposed to sleep all winter. Wake up when the snow melts."`;
+        speak(fullText, 0.6);
+    }
+
+    window.speechSynthesis.onvoiceschanged = getFemaleVoice;
+
+    function nextContent() {
+        currentIdx++;
+        if (currentIdx < wordList.length) {
+            const data = wordList[currentIdx];
+            if (data.type === "phrase") {
+                initPhrase(data);
+            } else {
+                initWord(data);
+            }
+        } else {
+            finishGame();
+        }
+    }
+
+    function initWord(data) {
+        step = -1;
+        document.getElementById('q-text').textContent = "Can you read it?";
+        const displayArea = document.getElementById('display');
+        displayArea.className = "word-display";
+        displayArea.style.textAlign = "center";
+        displayArea.innerText = data.w;
+        document.getElementById('trans').innerText = data.t;
+        
+        document.getElementById('btns-init').classList.remove('hidden');
+        document.getElementById('btns-step').classList.add('hidden');
+        document.getElementById('btns-final').classList.add('hidden');
+    }
+
+    function ansYes() {
+        const data = wordList[currentIdx];
+        confetti({ particleCount: 100, spread: 70 });
+        speak(data.w);
+        showFinalBtn();
+    }
+
+    function ansNo() {
+        const data = wordList[currentIdx];
+        if (data.type === "phrase") {
+            speak(data.w);
+            showFinalBtn();
+        } else {
+            step = 0;
+            document.getElementById('btns-init').classList.add('hidden');
+            document.getElementById('btns-step').classList.remove('hidden');
+            renderStep();
+        }
+    }
+
+    function renderStep() {
+        const data = wordList[currentIdx];
+        let h = "";
+        data.s.forEach((u, i) => {
+            let classes = "unit";
+            if (i === step) classes += " active";
+            if (data.magic !== undefined && i === data.magic) classes += " magic-e";
+            if (data.silent !== undefined && i === data.silent) classes += " silent-k";
+            h += `<span class="${classes}">${u}</span>`;
+        });
+        document.getElementById('display').innerHTML = h;
+    }
+
+    function doNext() {
+        const data = wordList[currentIdx];
+        step++;
+        if (step >= data.s.length) {
+            document.getElementById('display').innerText = data.w;
+            speak(data.w);
+            showFinalBtn();
+        } else {
+            renderStep();
+        }
+    }
+
+    function initPhrase(data) {
+        document.getElementById('q-text').textContent = "Read the story!";
+        const area = document.getElementById('display');
+        area.className = "phrase-display";
+        area.style.textAlign = "center";
+        area.innerHTML = data.w;
+        document.getElementById('trans').innerText = data.t;
+        
+        document.getElementById('btns-init').classList.remove('hidden');
+        document.getElementById('btns-step').classList.add('hidden');
+        document.getElementById('btns-final').classList.add('hidden');
+    }
+
+    function showFinalBtn() {
+        const isPhrase = wordList[currentIdx].type === "phrase";
+        document.getElementById('btns-step').classList.add('hidden');
+        document.getElementById('btns-init').classList.add('hidden');
+        document.getElementById('btns-final').classList.remove('hidden');
+        document.getElementById('main-btn').textContent = isPhrase ? "Next Part ➔" : "Next Word 🚀";
+    }
+
+    function finishGame() {
+        document.getElementById('q-text').textContent = "Excellent!";
+        const fullStoryHtml = `
+            <div class="story-container">
+                "Go back to sleep, Froggy,"<br>
+                said his mother.<br>
+                "Don't you know?<br>
+                Frogs are supposed to sleep<br>
+                all winter.<br>
+                Wake up when the snow melts."
+            </div>`;
+        const area = document.getElementById('display');
+        area.className = "phrase-display";
+        area.style.fontSize = "2rem";
+        area.style.textAlign = "center";
+        area.innerHTML = fullStoryHtml;
+        
+        document.getElementById('trans').innerHTML = `
+            <div>You read the whole page! 🌸</div>
+            <button class="btn btn-audio" onclick="speakFullStory()">🔊 お手本をきく</button>
+        `;
+        
+        document.getElementById('btns-final').classList.add('hidden');
+        document.getElementById('btns-init').classList.add('hidden');
+        
+        speak("Great job! You finished the second page!", 0.6);
+        confetti({ particleCount: 200, spread: 100 });
+    }
+
+    nextContent();
+</script>
+</body>
+</html>
