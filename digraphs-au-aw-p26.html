@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Phonics Game - au vs aw</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --vowel-color: #ff0000;
+            --consonant-color: #0000ff;
+            --success: #4caf50;
+            --accent: #ff9800;
+            --error: #f44336;
+            --bg-gradient: linear-gradient(-45deg, #fff9c4, #f1f8e9, #e1f5fe, #f3e5f5);
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Rounded Mplus 1c', sans-serif;
+            background: var(--bg-gradient);
+            background-size: 400% 400%;
+            animation: gradientBG 12s ease infinite;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #menuView, #gameView, #finishView { width: 95%; max-width: 800px; padding: 20px; text-align: center; }
+        .hidden { display: none !important; }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 35px;
+            padding: 30px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .image-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 15px;
+        }
+
+        .single-image { width: 100%; height: 100%; }
+        .single-image img { width: 100%; height: 100%; object-fit: contain; border-radius: 25px; }
+        
+        .speaker-btn {
+            position: absolute;
+            bottom: 5px;
+            right: -15px;
+            width: 65px;
+            height: 65px;
+            background: white;
+            border: 4px solid var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            box-shadow: 0 5px 0 #ddd;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .speaker-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #ddd; }
+
+        .word-slot { font-size: 4.5rem; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; font-weight: bold; color: #333; }
+        .drop-target {
+            min-width: 140px;
+            height: 100px;
+            border-bottom: 10px solid #333;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 10px;
+            color: var(--consonant-color);
+        }
+
+        .choices-container { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; }
+        .choice-btn {
+            width: 160px; height: 110px; background: white; border: 4px solid #eee;
+            font-size: 3.5rem; border-radius: 30px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 10px 0 #ddd;
+            transition: all 0.1s;
+            font-weight: bold;
+            color: var(--consonant-color);
+        }
+        .choice-btn:active { transform: translateY(6px); box-shadow: 0 4px 0 #ddd; }
+
+        #toast {
+            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+            padding: 15px 40px;
+            border-radius: 50px; font-size: 2rem; font-weight: bold;
+            opacity: 0; transition: all 0.4s; z-index: 10;
+            white-space: nowrap;
+        }
+        #toast.success { background: var(--success); color: white; opacity: 1; top: 15px; }
+        #toast.error { background: var(--error); color: white; opacity: 1; top: 15px; }
+
+        .btn-action {
+            background: var(--success); color: white;
+            padding: 20px 60px; font-size: 2rem;
+            border-radius: 100px; border: none; cursor: pointer;
+            box-shadow: 0 8px 0 #2e7d32;
+            font-weight: bold;
+        }
+        .btn-action:active { transform: translateY(4px); box-shadow: 0 4px 0 #2e7d32; }
+
+        .score-box { font-size: 4rem; color: #333; margin: 20px 0; font-weight: bold; }
+        
+        .workbook-msg {
+            background: #fff3e0;
+            border: 5px dashed var(--accent);
+            padding: 30px;
+            border-radius: 30px;
+            font-size: 2.2rem;
+            color: #e65100;
+            margin: 25px 0;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        #progressText { font-size: 1.6rem; font-weight: bold; background:white; padding:10px 25px; border-radius:25px; box-shadow: 0 5px 0 #ddd; }
+
+        @media (max-width: 600px) {
+            .word-slot { font-size: 3rem; }
+            .choice-btn { width: 130px; height: 90px; font-size: 2.5rem; }
+            .image-container { width: 220px; height: 220px; }
+            .workbook-msg { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menuView">
+        <h1 style="font-size: 3.5rem; color: #333; margin-top: 50px; text-shadow: 2px 2px 0 white;">✨ Phonics: au & aw</h1>
+        <p style="font-size: 1.8rem; color: #555;">Look at the picture and choose!</p>
+        <button class="btn-action" style="margin-top: 30px;" onclick="startGame()">Start! 🚀</button>
+    </div>
+
+    <div id="gameView" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 20px;">
+            <button onclick="showMenu()" style="cursor:pointer; background:white; border:none; color:#666; font-size:1.3rem; font-weight:bold; padding:10px 20px; border-radius:15px; box-shadow: 0 4px 0 #ddd;">← Menu</button>
+            <div id="progressText">0 / 12</div>
+        </div>
+        
+        <div class="game-card">
+            <div id="toast"></div>
+            <div class="image-container">
+                <div class="single-image">
+                    <img id="gameImg" src="" alt="target">
+                </div>
+                <button class="speaker-btn" onclick="speakWord(currentQuestion.word)" title="Listen">🎵</button>
+            </div>
+            <div class="word-slot" id="wordContainer"></div>
+            <div class="choices-container" id="choicesBox">
+                </div>
+            <button id="nextBtn" class="btn-action hidden" onclick="nextQuestion()">Next! →</button>
+        </div>
+    </div>
+
+    <div id="finishView" class="hidden">
+        <h1 style="font-size: 3.5rem; color: var(--success); text-shadow: 2px 2px 0 white;">🏆 All Finished!</h1>
+        <div id="finalScore" class="score-box">0 / 12</div>
+        <div class="workbook-msg">
+            Great job!<br>
+            Now, please do<br>
+            <span style="font-size: 3rem;">Workbook p.26 ✍️</span>
+        </div>
+        <button class="btn-action" style="background: #2196f3; box-shadow: 0 8px 0 #1976d2;" onclick="showMenu()">Play Again 🔄</button>
+    </div>
+
+    <script>
+        const imagePath = "images-au-aw/";
+        // 詳細な問題データ：choicesプロパティを修正
+        const wordData = [
+            { word: 'August', target: 'au', choices: ['Au', 'Aw'] }, // 大文字の選択肢
+            { word: 'Australia', target: 'au', choices: ['Au', 'Aw'] }, // 大文字の選択肢
+            { word: 'sauce', target: 'au', choices: ['au', 'aw'] }, // 小文字の選択肢
+            { word: 'cause', target: 'au', choices: ['au', 'aw'] }, // 小文字の選択肢
+            { word: 'trauma', target: 'au', choices: ['au', 'aw'] }, // 小文字の選択肢
+            { word: 'pause', target: 'au', choices: ['au', 'aw'] }, // 小文字の選択肢
+            { word: 'jaw', target: 'aw', choices: ['au', 'aw'] }, // 小文字の選択肢
+            { word: 'claws', target: 'aw', choices: ['au', 'aw'] }, // 小文字の選択肢
+            { word: 'yawn', target: 'aw', choices: ['au', 'aw'] }, // 小文字の選択肢
+            { word: 'draw', target: 'aw', choices: ['au', 'aw'] }, // 小文字の選択肢
+            { word: 'law', target: 'aw', choices: ['au', 'aw'] }, // 小文字の選択肢
+            { word: 'dawn', target: 'aw', choices: ['au', 'aw'] }  // 小文字の選択肢
+        ];
+
+        let gameQueue = [];
+        let currentQuestion = null;
+        let solvedCount = 0;
+        let correctCount = 0;
+        let preferredVoice = null;
+
+        // 音声の読み込みとキープ
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) return;
+            preferredVoice = 
+                voices.find(v => v.lang === "en-US" && v.name.includes("Google US English")) ||
+                voices.find(v => v.lang === "en-US" && v.name.includes("Samantha")) ||
+                voices.find(v => v.lang.startsWith("en-US") && (v.name.includes("Female") || v.name.includes("Zira")));
+        }
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        function speakWord(text) {
+            if (!text) return;
+            const synth = window.speechSynthesis;
+            synth.cancel(); 
+            const uttr = new SpeechSynthesisUtterance(text);
+            if (preferredVoice) uttr.voice = preferredVoice;
+            else uttr.lang = "en-US";
+            uttr.rate = 0.7; // 子供が聞き取りやすいゆっくりめの速度
+            uttr.pitch = 1.1; // 少し明るいトーン
+            synth.speak(uttr);
+        }
+
+        function startGame() {
+            loadVoices(); 
+            document.getElementById('menuView').classList.add('hidden');
+            document.getElementById('gameView').classList.remove('hidden');
+            document.getElementById('finishView').classList.add('hidden');
+            // 問題をシャッフル
+            gameQueue = [...wordData].sort(() => Math.random() - 0.5); 
+            solvedCount = 0;
+            correctCount = 0;
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if (gameQueue.length === 0) {
+                finishGame();
+                return;
+            }
+
+            currentQuestion = gameQueue.pop();
+            solvedCount++;
+            
+            document.getElementById('progressText').textContent = `${solvedCount} / ${wordData.length}`;
+            document.getElementById('gameImg').src = `${imagePath}${currentQuestion.word}.jpg`;
+            document.getElementById('nextBtn').classList.add('hidden');
+            
+            // トーストをリセット
+            const toast = document.getElementById('toast');
+            toast.className = '';
+            
+            // 単語を分割して空欄を表示
+            const container = document.getElementById('wordContainer');
+            // 単語のtarget部分（auかaw）を'_'に置き換える（August -> A_gust）
+            const wordWithBlank = currentQuestion.word.replace(new RegExp(currentQuestion.target, 'i'), '_');
+            const parts = wordWithBlank.split('_');
+
+            // parts[0] + 空欄 + parts[1] (例: A + _ + gust)
+            container.innerHTML = `<span>${parts[0]}</span><div id="dropTarget" class="drop-target">?</div><span>${parts[1]}</span>`;
+
+            // 選択肢ボタンを動的に生成
+            const choicesBox = document.getElementById('choicesBox');
+            choicesBox.innerHTML = ''; // 一旦クリア
+            choicesBox.classList.remove('hidden');
+
+            // 問題データに設定された選択肢を生成
+            currentQuestion.choices.forEach(choice => {
+                const button = document.createElement('div');
+                button.className = 'choice-btn';
+                button.textContent = choice;
+                button.onclick = () => checkAnswer(choice);
+                choicesBox.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selected) {
+            if (!document.getElementById('nextBtn').classList.contains('hidden')) return;
+
+            const toast = document.getElementById('toast');
+            // 選択肢の文字（Au/Aw）を小文字にして正解（au/aw）と比較
+            if (selected.toLowerCase() === currentQuestion.target.toLowerCase()) {
+                // 正解
+                correctCount++;
+                document.getElementById('dropTarget').textContent = selected;
+                document.getElementById('dropTarget').style.color = 'var(--success)';
+                toast.textContent = "Excellent! ✨";
+                toast.className = 'success';
+                document.getElementById('nextBtn').classList.remove('hidden');
+                
+                // お祝いエフェクト
+                const duration = 2 * 1000;
+                const end = Date.now() + duration;
+                (function frame() {
+                    confetti({ particleCount: 7, angle: 60, spread: 55, origin: { x: 0 } });
+                    confetti({ particleCount: 7, angle: 120, spread: 55, origin: { x: 1 } });
+                    if (Date.now() < end) requestAnimationFrame(frame);
+                }());
+            } else {
+                // 不正解
+                // 正解の選択肢を見つけて表示
+                const correctChoice = currentQuestion.choices.find(c => c.toLowerCase() === currentQuestion.target.toLowerCase());
+                toast.textContent = `Oops! It's "${correctChoice}".`;
+                toast.className = 'error';
+                // 間違えた場合、正しいスペルを空欄に表示
+                document.getElementById('dropTarget').textContent = correctChoice;
+                document.getElementById('dropTarget').style.color = 'var(--error)';
+                document.getElementById('nextBtn').classList.remove('hidden');
+            }
+        }
+
+        function finishGame() {
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+            document.getElementById('gameView').classList.add('hidden');
+            document.getElementById('finishView').classList.remove('hidden');
+            document.getElementById('finalScore').textContent = `${correctCount} / ${wordData.length}`;
+        }
+
+        function showMenu() {
+            document.getElementById('gameView').classList.add('hidden');
+            document.getElementById('finishView').classList.add('hidden');
+            document.getElementById('menuView').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

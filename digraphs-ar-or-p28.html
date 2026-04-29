@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Phonics Game - ar vs or</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --vowel-color: #ff0000;
+            --consonant-color: #0000ff;
+            --success: #4caf50;
+            --accent: #ff9800;
+            --error: #f44336;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background: linear-gradient(-45deg, #e0f7fa, #fce4ec, #f1f8e9, #fffde7);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #menuView, #gameView, #finishView { width: 95%; max-width: 800px; padding: 20px; text-align: center; }
+        .hidden { display: none !important; }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 35px;
+            padding: 30px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .image-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 15px;
+        }
+
+        .single-image { width: 100%; height: 100%; }
+        .single-image img { width: 100%; height: 100%; object-fit: contain; border-radius: 20px; }
+        
+        .speaker-btn {
+            position: absolute;
+            bottom: 10px;
+            right: -10px;
+            width: 60px;
+            height: 60px;
+            background: white;
+            border: 3px solid var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            box-shadow: 0 4px 0 #ddd;
+            transition: transform 0.1s;
+        }
+        .speaker-btn:active { transform: scale(0.9); }
+
+        .word-slot { font-size: 5rem; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; font-weight: bold; }
+        .drop-target {
+            min-width: 140px;
+            height: 110px;
+            border-bottom: 10px solid #333;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 10px;
+            color: var(--consonant-color);
+        }
+
+        .choices-container { display: flex; justify-content: center; gap: 30px; margin-bottom: 25px; }
+        .choice-btn {
+            width: 150px; height: 100px; background: white; border: 3px solid #eee;
+            font-size: 3rem; border-radius: 25px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 8px 0 #ddd;
+            transition: all 0.1s;
+            font-weight: bold;
+            color: var(--consonant-color);
+        }
+        .choice-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #ddd; }
+
+        #toast {
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+            padding: 12px 30px;
+            border-radius: 50px; font-size: 1.8rem; font-weight: bold;
+            opacity: 0; transition: all 0.4s; z-index: 10;
+            white-space: nowrap;
+        }
+        #toast.success { background: var(--success); color: white; opacity: 1; top: 15px; }
+        #toast.error { background: var(--error); color: white; opacity: 1; top: 15px; }
+
+        .btn-action {
+            background: var(--success); color: white;
+            padding: 18px 50px; font-size: 1.8rem;
+            border-radius: 100px; border: none; cursor: pointer;
+            box-shadow: 0 8px 0 #2e7d32;
+            font-weight: bold;
+        }
+
+        .workbook-msg {
+            background: #fff3e0;
+            border: 4px dashed var(--accent);
+            padding: 20px;
+            border-radius: 20px;
+            font-size: 2rem;
+            color: #e65100;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .score-display {
+            font-size: 3rem;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .word-slot { font-size: 3.5rem; }
+            .choice-btn { width: 120px; height: 80px; font-size: 2.2rem; }
+            .image-container { width: 220px; height: 220px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menuView">
+        <h1 style="font-size: 3rem; color: #333; margin-top: 40px;">✨ Phonics: ar & or</h1>
+        <p style="font-size: 1.5rem;">Look at the picture and choose!</p>
+        <button class="btn-action" style="margin-top: 20px;" onclick="startGame()">Start! 🚀</button>
+    </div>
+
+    <div id="gameView" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;">
+            <button onclick="showMenu()" style="cursor:pointer; background:none; border:none; color:#666; font-size:1.2rem; font-weight:bold;">← Menu</button>
+            <div id="progressText" style="font-size: 1.5rem; font-weight: bold; background:white; padding:8px 20px; border-radius:20px; box-shadow: 0 4px 0 #ddd;">0 / 12</div>
+        </div>
+        
+        <div class="game-card">
+            <div id="toast"></div>
+            <div class="image-container">
+                <div class="single-image">
+                    <img id="gameImg" src="" alt="target">
+                </div>
+                <button class="speaker-btn" onclick="speakWord(currentQuestion.word)" title="Listen">🎵</button>
+            </div>
+            <div class="word-slot" id="wordContainer"></div>
+            <div class="choices-container" id="choicesBox">
+                <div class="choice-btn" onclick="checkAnswer('ar')">ar</div>
+                <div class="choice-btn" onclick="checkAnswer('or')">or</div>
+            </div>
+            <button id="nextBtn" class="btn-action hidden" onclick="nextQuestion()">Next! →</button>
+        </div>
+    </div>
+
+    <div id="finishView" class="hidden">
+        <h1 style="font-size: 3.5rem; color: var(--success);">🏆 All Finished!</h1>
+        <div id="finalScore" class="score-display">12 / 12</div>
+        <div class="workbook-msg">
+            Great job!<br>Now, please do <br>Workbook p.28 ✍️
+        </div>
+        <button class="btn-action" onclick="showMenu()">Play Again 🔄</button>
+    </div>
+
+    <script>
+        const imagePath = "images-ar-or/";
+        const wordData = [
+            { word: 'arm', target: 'ar' }, { word: 'bark', target: 'ar' }, 
+            { word: 'shark', target: 'ar' }, { word: 'carpet', target: 'ar' },
+            { word: 'market', target: 'ar' }, { word: 'park', target: 'ar' },
+            { word: 'torch', target: 'or' }, { word: 'corn', target: 'or' },
+            { word: 'fork', target: 'or' }, { word: 'shorts', target: 'or' },
+            { word: 'horse', target: 'or' }, { word: 'sports', target: 'or' }
+        ];
+
+        let gameQueue = [];
+        let currentQuestion = null;
+        let solvedCount = 0;
+        let correctCount = 0; // 追加：正解数をカウント
+        let preferredVoice = null;
+
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) return;
+            preferredVoice = 
+                voices.find(v => v.lang === "en-US" && v.name.includes("Google US English")) ||
+                voices.find(v => v.lang === "en-US" && v.name.includes("Samantha")) ||
+                voices.find(v => v.lang.startsWith("en-US") && (v.name.includes("Female") || v.name.includes("Zira")));
+        }
+
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        function speakWord(text) {
+            if (!text) return;
+            const synth = window.speechSynthesis;
+            synth.cancel(); 
+            const uttr = new SpeechSynthesisUtterance(text);
+            if (preferredVoice) uttr.voice = preferredVoice;
+            else uttr.lang = "en-US";
+            uttr.rate = 0.7;  
+            uttr.pitch = 1.1; 
+            synth.speak(uttr);
+        }
+
+        function startGame() {
+            loadVoices(); 
+            document.getElementById('menuView').classList.add('hidden');
+            document.getElementById('gameView').classList.remove('hidden');
+            document.getElementById('finishView').classList.add('hidden');
+            gameQueue = [...wordData].sort(() => Math.random() - 0.5); 
+            solvedCount = 0;
+            correctCount = 0; // 追加：ゲーム開始時にリセット
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if (gameQueue.length === 0) {
+                finishGame();
+                return;
+            }
+
+            currentQuestion = gameQueue.pop();
+            solvedCount++;
+            
+            document.getElementById('progressText').textContent = `${solvedCount} / ${wordData.length}`;
+            document.getElementById('gameImg').src = `${imagePath}${currentQuestion.word}.jpg`;
+            document.getElementById('nextBtn').classList.add('hidden');
+            document.getElementById('choicesBox').classList.remove('hidden');
+            
+            const toast = document.getElementById('toast');
+            toast.className = '';
+            
+            const container = document.getElementById('wordContainer');
+            const parts = currentQuestion.word.split(currentQuestion.target);
+            container.innerHTML = `<span>${parts[0]}</span><div id="dropTarget" class="drop-target">?</div><span>${parts[1]}</span>`;
+        }
+
+        function checkAnswer(selected) {
+            if (!document.getElementById('nextBtn').classList.contains('hidden')) return;
+
+            const toast = document.getElementById('toast');
+            if (selected === currentQuestion.target) {
+                // Correct
+                correctCount++; // 追加：正解数をインクリメント
+                document.getElementById('dropTarget').textContent = selected;
+                document.getElementById('dropTarget').style.color = 'var(--success)';
+                toast.textContent = "Excellent! ✨";
+                toast.className = 'success';
+                document.getElementById('nextBtn').classList.remove('hidden');
+                
+                // speakWord(currentQuestion.word); // 変更：ここでは自動再生しない
+                
+                // Big celebration
+                const duration = 2 * 1000;
+                const end = Date.now() + duration;
+                (function frame() {
+                    confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 } });
+                    confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 } });
+                    if (Date.now() < end) requestAnimationFrame(frame);
+                }());
+            } else {
+                // Incorrect
+                toast.textContent = `Oops! The correct answer is "${currentQuestion.target}".`;
+                toast.className = 'error';
+                // speakWord("Try again"); // 変更：ここでは自動再生しない
+            }
+        }
+
+        function finishGame() {
+            confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
+            document.getElementById('gameView').classList.add('hidden');
+            document.getElementById('finishView').classList.remove('hidden');
+            
+            // 変更：正解数を表示
+            document.getElementById('finalScore').textContent = `${correctCount} / ${wordData.length}`;
+            
+            // speakWord("Great job! Now, check your workbook."); // 変更：ここでは自動再生しない
+        }
+
+        function showMenu() {
+            document.getElementById('gameView').classList.add('hidden');
+            document.getElementById('finishView').classList.add('hidden');
+            document.getElementById('menuView').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
