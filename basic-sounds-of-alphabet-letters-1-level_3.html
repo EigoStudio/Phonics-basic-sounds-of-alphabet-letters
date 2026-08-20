@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Basic Alphabet Sounds - Level 3</title>
+    <script src="auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
@@ -187,12 +188,34 @@
         function isVowel(letter) { return vowels.includes(letter); }
         function getLetterColor(letter) { return isVowel(letter) ? 'var(--vowel-color)' : 'var(--consonant-color)'; }
 
+        /* Rainbowの音声設定を追加 */
+        let preferredVoice = null;
+
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) return;
+            preferredVoice = 
+                voices.find(v => v.lang === "en-US" && v.name.includes("Google US English")) ||
+                voices.find(v => v.lang === "en-US" && v.name.includes("Samantha")) ||
+                voices.find(v => v.lang.startsWith("en-US") && (v.name.includes("Female") || v.name.includes("Zira"))) ||
+                voices.find(v => v.lang.startsWith("en"));
+        }
+        
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        /* Rainbowスタイルのspeak関数に差し替え */
         function speak(text) {
             const synth = window.speechSynthesis;
+            if (!synth) return;
             synth.cancel();
+            
             const uttr = new SpeechSynthesisUtterance(text);
-            uttr.lang = "en-US";
-            uttr.rate = 0.8;
+            if (preferredVoice) uttr.voice = preferredVoice;
+            uttr.rate = 0.8;  
+            uttr.pitch = 1.15; 
             synth.speak(uttr);
         }
 
