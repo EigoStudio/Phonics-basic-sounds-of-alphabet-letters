@@ -185,12 +185,34 @@
         let currentWord = "";
         let currentLastLetter = "";
 
+        /* 女性の声（聞きやすいおすすめ音声）を選択するロジック */
+        let preferredVoice = null;
+
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) return;
+            preferredVoice = 
+                voices.find(v => v.lang === "en-US" && v.name.includes("Google US English")) ||
+                voices.find(v => v.lang === "en-US" && v.name.includes("Samantha")) ||
+                voices.find(v => v.lang.startsWith("en-US") && (v.name.includes("Female") || v.name.includes("Zira"))) ||
+                voices.find(v => v.lang.startsWith("en"));
+        }
+        
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        /* 女性の声＆少しゆっくり目（rate: 0.75 / pitch: 1.15）の発音機能 */
         function speak(text) {
             const synth = window.speechSynthesis;
+            if (!synth) return;
             synth.cancel();
+            
             const uttr = new SpeechSynthesisUtterance(text);
-            uttr.lang = "en-US";
-            uttr.rate = 0.8;
+            if (preferredVoice) uttr.voice = preferredVoice;
+            uttr.rate = 0.75;  /* 少しゆっくりめ（デフォルトは1.0） */
+            uttr.pitch = 1.15; /* 明るいトーン */
             synth.speak(uttr);
         }
 
