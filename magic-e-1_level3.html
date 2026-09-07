@@ -75,11 +75,10 @@
         .choices-area { display: flex; flex-direction: column; gap: 20px; align-items: center; }
         .choices-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; max-width: 400px; }
         
-        /* eの選択肢を他のボタンと同じデザインに */
         .e-choices { display: flex; gap: 20px; justify-content: center; width: 100%; }
 
         .choice-btn {
-            font-family: inherit; /* 親要素のフォントを継承 */
+            font-family: inherit;
             background: white; border: 3px solid #eee;
             font-size: 3rem; border-radius: 15px; cursor: pointer;
             display: flex; justify-content: center; align-items: center;
@@ -141,7 +140,6 @@
     </div>
 
     <script>
-        // (JavaScript部分は前回と同様です)
         const wordData = [
             { word: "tap", vowel: "a", hasE: false }, { word: "tape", vowel: "a", hasE: true },
             { word: "mad", vowel: "a", hasE: false }, { word: "made", vowel: "a", hasE: true },
@@ -159,12 +157,41 @@
         let currentItem = null;
         let selectedVowel = "";
 
+        /* --- 音声設定（Momoと同じ声質選び ＋ 単語用に最適な速度 0.75） --- */
+        let preferredVoice = null;
+
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) return;
+
+            const usVoices = voices.filter(v => v.lang === "en-US" || v.lang === "en_US");
+            preferredVoice = 
+                usVoices.find(v => v.name.includes("Ava")) ||
+                usVoices.find(v => v.name.includes("Ana")) ||
+                usVoices.find(v => v.name.includes("Jenny")) ||
+                usVoices.find(v => v.name.includes("Google US English")) ||
+                usVoices.find(v => v.name.includes("Samantha")) ||
+                usVoices.find(v => v.name.includes("Aria")) ||
+                usVoices.find(v => v.name.includes("Female")) ||
+                usVoices[0];
+        }
+
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
         function speak(text) {
+            if (!('speechSynthesis' in window)) return;
             const synth = window.speechSynthesis;
             synth.cancel();
+
             const uttr = new SpeechSynthesisUtterance(text);
+            if (preferredVoice) uttr.voice = preferredVoice;
             uttr.lang = "en-US";
-            uttr.rate = 0.8;
+            uttr.rate = 0.75; /* 0.75で自然な発音 */
+            uttr.pitch = 1.0;
             synth.speak(uttr);
         }
 
