@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Magic "e" Part 1</title>
+    <script src="auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
@@ -152,14 +153,44 @@
         let currentIdx = 0;
         let currentItem = null;
 
+       /* --- 音声設定（Momoと同じ声・速度0.75で自然な発音） --- */
+        let preferredVoice = null;
+
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) return;
+
+            const usVoices = voices.filter(v => v.lang === "en-US" || v.lang === "en_US");
+            preferredVoice = 
+                usVoices.find(v => v.name.includes("Ava")) ||
+                usVoices.find(v => v.name.includes("Ana")) ||
+                usVoices.find(v => v.name.includes("Jenny")) ||
+                usVoices.find(v => v.name.includes("Google US English")) ||
+                usVoices.find(v => v.name.includes("Samantha")) ||
+                usVoices.find(v => v.name.includes("Aria")) ||
+                usVoices.find(v => v.name.includes("Female")) ||
+                usVoices[0];
+        }
+
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
         function speak(text) {
+            if (!('speechSynthesis' in window)) return;
             const synth = window.speechSynthesis;
             synth.cancel();
+
             const uttr = new SpeechSynthesisUtterance(text);
+            if (preferredVoice) uttr.voice = preferredVoice;
             uttr.lang = "en-US";
-            uttr.rate = 0.8;
+            uttr.rate = 0.75; /* フォニックス単語に適した自然なスピード */
+            uttr.pitch = 1.0;
             synth.speak(uttr);
         }
+        /* ------------------------------------ */
 
         function initDictionary() {
             const grid = document.getElementById('dictGrid');
