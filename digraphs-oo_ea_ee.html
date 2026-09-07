@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Digraphs - oo / ea / ee</title>
+    <script src="auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
@@ -208,6 +209,45 @@
         let currentQuestion = null;
         const praiseWords = ["Great! ✨", "Amazing! 🌟", "Good Job! 👍", "Perfect! 🎯"];
 
+        /* --- 音声設定（Momoと同じ声質選び ＋ フォニックス速度 0.75） --- */
+        let preferredVoice = null;
+
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) return;
+
+            const usVoices = voices.filter(v => v.lang === "en-US" || v.lang === "en_US");
+            preferredVoice = 
+                usVoices.find(v => v.name.includes("Ava")) ||
+                usVoices.find(v => v.name.includes("Ana")) ||
+                usVoices.find(v => v.name.includes("Jenny")) ||
+                usVoices.find(v => v.name.includes("Google US English")) ||
+                usVoices.find(v => v.name.includes("Samantha")) ||
+                usVoices.find(v => v.name.includes("Aria")) ||
+                usVoices.find(v => v.name.includes("Female")) ||
+                usVoices[0];
+        }
+
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        function speakWord(text) {
+            if (!('speechSynthesis' in window)) return;
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            let speechText = text.toLowerCase() === 'read' ? 'reed' : text;
+            const uttr = new SpeechSynthesisUtterance(speechText);
+            if (preferredVoice) uttr.voice = preferredVoice;
+            uttr.lang = "en-US";
+            uttr.rate = 0.75; 
+            uttr.pitch = 1.0; 
+            synth.speak(uttr);
+        }
+        /* ------------------------------------ */
+
         function setLevel(lv, btn) {
             currentLevel = lv;
             document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
@@ -220,17 +260,6 @@
                 [array[i], array[j]] = [array[j], array[i]];
             }
             return array;
-        }
-
-        function speakWord(text) {
-            const synth = window.speechSynthesis;
-            synth.cancel();
-            let speechText = text.toLowerCase() === 'read' ? 'reed' : text;
-            const uttr = new SpeechSynthesisUtterance(speechText);
-            uttr.lang = "en-US";
-            uttr.rate = 0.8; 
-            uttr.pitch = 0.9; 
-            synth.speak(uttr);
         }
 
         function startGame() {
@@ -281,7 +310,7 @@
                 interaction.innerHTML = `
                     <div class="ox-container">
                         <button class="ox-btn btn-o" onclick="checkOX(true, ${isCorrectCase})">◯</button>
-                        <button class="ox-btn btn-x" onclick="checkOX(false, ${isCorrectCase})">×</button>
+                        <button class="ox-btn btn-x" onclick="checkOX(false, ${isCorrectCase})">× </button>
                     </div>`;
             } else {
                 container.innerHTML = currentQuestion.word.replace(realLetters, `<div id="dropTarget" class="drop-target">?</div>`);
