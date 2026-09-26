@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Read Some Sentences #2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Kosugi+Maru&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --accent-pink: #FF4081;
+            --accent-blue: #2196F3;
+            --accent-green: #4CAF50;
+            --accent-purple: #9C27B0;
+            --accent-orange: #FF9800;
+            --en-font: "Comic Neue", "Chalkboard SE", "Comic Sans MS", sans-serif;
+            --jp-font: "Kosugi Maru", "Hiragino Kaku Gothic ProN", sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--en-font);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95); width: 95%; max-width: 800px; padding: 25px;
+            border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center;
+            position: relative;
+        }
+
+        .header-bar {
+            display: flex; justify-content: flex-end; align-items: center; margin-bottom: 15px;
+        }
+
+        .progress-badge {
+            background: var(--accent-purple); color: white; padding: 6px 18px;
+            border-radius: 20px; font-weight: bold; font-size: 1.2rem;
+        }
+
+        /* 画像表示エリア & 起動ボタン */
+        .q-image-container {
+            width: 240px; height: 240px; margin: 10px auto 15px;
+            background: #f8f9fa; border-radius: 20px; border: 3px dashed #ccc;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .q-image { width: 100%; height: 100%; object-fit: contain; }
+
+        .show-img-btn {
+            background: var(--accent-orange); color: white; border: none; padding: 14px 24px;
+            border-radius: 50px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 0 #F57C00; display: flex; align-items: center; gap: 8px;
+            transition: 0.1s;
+        }
+        .show-img-btn:active { transform: translateY(2px); box-shadow: none; }
+
+        /* センテンス表示 */
+        .sentence-box {
+            font-size: 2.3rem; font-family: var(--en-font); font-weight: bold;
+            line-height: 1.6; padding: 15px 10px; color: #2c3e50; min-height: 100px;
+            display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+        }
+
+        /* 録音＆音声操作エリア */
+        .audio-controls {
+            display: flex; justify-content: center; gap: 15px; margin: 15px 0; flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 12px 24px; border-radius: 50px; font-size: 1.3rem; font-weight: bold;
+            border: none; cursor: pointer; color: white; display: flex; align-items: center;
+            gap: 8px; transition: 0.1s; box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+        }
+        .control-btn:active { transform: translateY(2px); box-shadow: none; }
+
+        .btn-listen { background: var(--accent-purple); box-shadow: 0 4px 0 #7b1fa2; }
+        .btn-record { background: #e74c3c; box-shadow: 0 4px 0 #c0392b; }
+        .btn-record.recording { background: var(--accent-green); box-shadow: 0 4px 0 #388E3C; animation: pulse 1s infinite; }
+        .btn-play-user { background: var(--accent-blue); box-shadow: 0 4px 0 #1976D2; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* ナビゲーション */
+        .nav-controls {
+            display: flex; justify-content: space-between; margin-top: 20px;
+        }
+        .nav-btn {
+            background: #607D8B; color: white; border: none; padding: 12px 28px;
+            border-radius: 30px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 0 #455A64; display: flex; align-items: center; gap: 8px;
+        }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+
+        .hidden { display: none !important; }
+
+        /* 🖨️ 印刷専用スタイル（Cmd + P 用：シンプル黒字・和訳付き） */
+        .print-only { display: none; }
+
+        @media print {
+            body * { visibility: hidden !important; }
+            .print-only, .print-only * { visibility: visible !important; }
+            .print-only {
+                display: block !important;
+                position: absolute; left: 0; top: 0; width: 100%;
+                color: #000 !important; background: #fff !important;
+                padding: 15mm; box-sizing: border-box;
+            }
+            .print-title {
+                font-family: var(--en-font) !important;
+                font-size: 22pt; font-weight: bold; text-align: center; margin-bottom: 25px;
+            }
+            .print-sentence-list {
+                list-style-type: decimal; padding-left: 30px; margin: 0;
+            }
+            .print-sentence-item {
+                margin-bottom: 16px; color: #000;
+            }
+            .print-en {
+                font-family: var(--en-font) !important;
+                font-size: 16pt; font-weight: bold; display: block; line-height: 1.3;
+            }
+            .print-jp {
+                font-family: var(--jp-font) !important;
+                font-size: 11pt; color: #333; display: block; margin-top: 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app-view">
+    <div class="header-bar">
+        <div class="progress-badge" id="progressText">1 / 10</div>
+    </div>
+
+    <!-- 画像表示エリア（ボタンタップで開く） -->
+    <div class="q-image-container">
+        <button class="show-img-btn" id="showImgBtn" onclick="revealImage()">
+            <i class="fa-solid fa-image"></i> Picture
+        </button>
+        <img id="qImg" src="" class="q-image hidden" alt="Hint Picture">
+    </div>
+
+    <!-- センテンス表示 -->
+    <div class="sentence-box" id="sentenceDisplay"></div>
+
+    <!-- 音声コントロール -->
+    <div class="audio-controls">
+        <button class="control-btn btn-listen" onclick="speakCurrentSentence()">
+            <i class="fa-solid fa-volume-high"></i> Listen
+        </button>
+        <button class="control-btn btn-record" id="recBtn" onclick="toggleRecording()">
+            <i class="fa-solid fa-microphone"></i> <span id="recBtnText">Record</span>
+        </button>
+        <button class="control-btn btn-play-user hidden" id="playUserBtn" onclick="playUserVoice()">
+            <i class="fa-solid fa-play"></i> My Voice
+        </button>
+    </div>
+
+    <!-- ナビゲーション -->
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="prevQuestion()">◀ Back</button>
+        <button class="nav-btn" id="nextBtn" onclick="nextQuestion()">Next ▶</button>
+    </div>
+</div>
+
+<!-- 🖨️ 印刷専用レイアウト (Cmd+P) -->
+<div class="print-only">
+    <div class="print-title">Read Some Sentences #2</div>
+    <ol class="print-sentence-list" id="printList"></ol>
+</div>
+
+<audio id="userAudioPlayer" style="display:none;"></audio>
+
+<script>
+const sentences = [
+    { text: "The chick with a shell is on the bench.", jp: "貝殻をかぶったヒヨコがベンチの上にいます。", img: "images-sentences2/q1.jpg" },
+    { text: "Check the fish in the shop.", jp: "お店の中にいる魚を見てみよう。", img: "images-sentences2/q2.jpg" },
+    { text: "My brother has a red truck and a clock.", jp: "僕のお兄ちゃんは赤いトラックと時計を持っています。", img: "images-sentences2/q3.jpg" },
+    { text: "The cute dolphin takes a photo with a trophy.", jp: "かわいいイルカがトロフィーと一緒に写真を撮ります。", img: "images-sentences2/q4.jpg" },
+    { text: "Father takes a bath with cheese.", jp: "お父さんはチーズとお風呂に入ります。", img: "images-sentences2/q5.jpg" },
+    { text: "When will the white whale splash?", jp: "白いクジラはいつバシャッと水しぶきをあげるかな？", img: "images-sentences2/q6.jpg" },
+    { text: "I think that thunder is loud.", jp: "雷は大きな音がすると思います。", img: "images-sentences2/q7.jpg" },
+    { text: "Kick the ball and do not touch the thick socks.", jp: "ボールを蹴って、厚手の靴下には触らないでね。", img: "images-sentences2/q8.jpg" },
+    { text: "She will whip a sweet cake in a rush.", jp: "彼女は大急ぎで甘いケーキを作ります。", img: "images-sentences2/q9.jpg" },
+    { text: "Call me on the phone to whisper a secret.", jp: "内緒話のひそひそ話をする時は電話をしてね。", img: "images-sentences2/q10.jpg" }
+];
+
+let currentIdx = 0;
+let preferredVoice = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let userAudioUrl = null;
+let isRecording = false;
+
+function loadVoices() {
+    const voices = window.speechSynthesis.getVoices();
+    preferredVoice = voices.find(v => v.lang === "en-US" && v.name.includes("Google US English")) ||
+                     voices.find(v => v.lang === "en-US" && v.name.includes("Samantha")) ||
+                     voices.find(v => v.lang.startsWith("en-US") && (v.name.includes("Female") || v.name.includes("Zira"))) ||
+                     voices.find(v => v.lang.startsWith("en"));
+}
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+}
+
+function speak(text) {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const uttr = new SpeechSynthesisUtterance(text);
+    if (preferredVoice) uttr.voice = preferredVoice;
+    uttr.lang = "en-US";
+    uttr.rate = 0.70;
+    uttr.pitch = 1.05;
+    synth.speak(uttr);
+}
+
+function speakCurrentSentence() {
+    speak(sentences[currentIdx].text);
+}
+
+function renderQuestion() {
+    const q = sentences[currentIdx];
+    document.getElementById('progressText').textContent = `${currentIdx + 1} / ${sentences.length}`;
+    document.getElementById('sentenceDisplay').textContent = q.text;
+    
+    // 画像エリアのリセット（隠す）
+    const qImg = document.getElementById('qImg');
+    qImg.src = q.img;
+    qImg.classList.add('hidden');
+    document.getElementById('showImgBtn').classList.remove('hidden');
+
+    // 録音再生ボタンのリセット
+    userAudioUrl = null;
+    document.getElementById('playUserBtn').classList.add('hidden');
+
+    // ボタンの状態切り替え
+    document.getElementById('prevBtn').disabled = (currentIdx === 0);
+    document.getElementById('nextBtn').textContent = (currentIdx === sentences.length - 1) ? "Finish 🏆" : "Next ▶";
+}
+
+function revealImage() {
+    document.getElementById('showImgBtn').classList.add('hidden');
+    document.getElementById('qImg').classList.remove('hidden');
+}
+
+function prevQuestion() {
+    if (currentIdx > 0) { currentIdx--; renderQuestion(); }
+}
+
+function nextQuestion() {
+    if (currentIdx < sentences.length - 1) {
+        currentIdx++;
+        renderQuestion();
+    } else {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }
+}
+
+/* 録音処理 */
+async function toggleRecording() {
+    if (isRecording) {
+        stopRecording();
+    } else {
+        await startRecording();
+    }
+}
+
+async function startRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(track => track.stop());
+            const blob = new Blob(audioChunks, { type: 'audio/wav' });
+            userAudioUrl = URL.createObjectURL(blob);
+            document.getElementById('userAudioPlayer').src = userAudioUrl;
+            document.getElementById('playUserBtn').classList.remove('hidden');
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        document.getElementById('recBtn').classList.add('recording');
+        document.getElementById('recBtnText').textContent = "Stop";
+    } catch (err) {
+        alert("Microphone access is required.");
+    }
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+    }
+    isRecording = false;
+    document.getElementById('recBtn').classList.remove('recording');
+    document.getElementById('recBtnText').textContent = "Record";
+}
+
+function playUserVoice() {
+    const player = document.getElementById('userAudioPlayer');
+    if (player.src) player.play();
+}
+
+/* 印刷用リストの構築（英文 + 漢字交じり和訳） */
+function initPrintList() {
+    const printList = document.getElementById('printList');
+    printList.innerHTML = "";
+    sentences.forEach(s => {
+        const li = document.createElement('li');
+        li.className = 'print-sentence-item';
+        
+        const enSpan = document.createElement('span');
+        enSpan.className = 'print-en';
+        enSpan.textContent = s.text;
+        
+        const jpSpan = document.createElement('span');
+        jpSpan.className = 'print-jp';
+        jpSpan.textContent = s.jp;
+        
+        li.appendChild(enSpan);
+        li.appendChild(jpSpan);
+        printList.appendChild(li);
+    });
+}
+
+initPrintList();
+renderQuestion();
+</script>
+</body>
+</html>
