@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Can you say the days of the week?</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&family=Fredoka:wght@600;700&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #FF6B6B;
+            --accent: #FFD166;
+            --success: #06D6A0;
+            --purple: #8338EC;
+            --dark: #2B2D42;
+            --bg-grad: linear-gradient(135deg, #e0f7fa 0%, #e8eaf6 100%);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Fredoka', 'Zen Maru Gothic', sans-serif;
+            background: var(--bg-grad);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 25px 30px;
+            position: relative;
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: #EBF8FF;
+            color: var(--primary);
+            border: 2px solid #BEE3F8;
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+            box-shadow: 0 4px 0 #CBD5E0;
+        }
+
+        .tab-btn:hover {
+            background: #BEE3F8;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 0 #2B6CB0;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px dashed #cbd5e0;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 1.8rem;
+            color: var(--purple);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .progress-badge {
+            background: var(--accent);
+            color: var(--dark);
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 6px 16px;
+            border-radius: 20px;
+            box-shadow: 0 4px 0 #e6b800;
+        }
+
+        /* Card Content Area */
+        .card-body {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 25px;
+            text-align: center;
+        }
+
+        .instruction-box {
+            font-size: 1.6rem;
+            color: var(--primary);
+            font-weight: bold;
+            background: #EBF8FF;
+            padding: 12px 25px;
+            border-radius: 20px;
+            border: 2px solid #BEE3F8;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .target-word-display {
+            font-size: 4.5rem;
+            font-weight: bold;
+            color: var(--dark);
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0px #cbd5e0;
+            margin: 10px 0;
+        }
+
+        .chant-line-display {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--dark);
+            background: white;
+            border: 3px dashed var(--primary);
+            border-radius: 24px;
+            padding: 25px 30px;
+            max-width: 700px;
+            line-height: 1.4;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.05);
+            margin: 10px 0;
+        }
+
+        /* Controls */
+        .record-btn {
+            background: var(--secondary);
+            color: white; border: none;
+            padding: 16px 36px; border-radius: 50px;
+            cursor: pointer; font-size: 1.8rem; font-weight: bold;
+            font-family: inherit;
+            box-shadow: 0 6px 0 #d93838; transition: all 0.1s;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .record-btn:active { transform: translateY(3px); box-shadow: none; }
+        .record-btn.recording {
+            background: var(--success);
+            box-shadow: 0 6px 0 #049e75;
+            animation: pulse-rec 1s infinite;
+        }
+
+        @keyframes pulse-rec {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .btn-next {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.6rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #049e75;
+            margin-top: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: inherit;
+        }
+        .btn-next:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+            padding: 20px; backdrop-filter: blur(4px);
+        }
+
+        .rec-modal-card {
+            background: white; border-radius: 28px;
+            padding: 30px 24px; text-align: center;
+            max-width: 600px; width: 92%;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        .rec-modal-title {
+            font-size: 1.8rem;
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .rec-modal-target {
+            font-size: 2rem; font-weight: 700; color: var(--dark);
+            margin-bottom: 25px; line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .rec-modal-btns {
+            display: flex; gap: 20px; justify-content: center;
+            align-items: center; flex-wrap: wrap;
+        }
+
+        .modal-icon-btn {
+            border: none; color: white;
+            width: 75px; height: 75px;
+            border-radius: 50%; font-size: 2rem;
+            cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.1s;
+        }
+        .modal-icon-btn:active { transform: translateY(3px); box-shadow: none; }
+
+        /* HANGMAN STYLES */
+        .hangman-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .game-main {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .canvas-card {
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border: 2px solid #e2e8f0;
+        }
+
+        .word-card {
+            flex-grow: 1;
+            min-width: 280px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .word-slots {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            min-height: 55px;
+        }
+
+        .letter-slot {
+            width: 42px;
+            height: 52px;
+            border-bottom: 4px solid var(--dark);
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: lowercase;
+        }
+
+        .keyboard-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            max-width: 750px;
+            margin-top: 10px;
+        }
+
+        .key-btn {
+            width: 44px;
+            height: 48px;
+            background: #EBF8FF;
+            border: 2px solid #90CDF4;
+            color: #2B6CB0;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #63B3ED;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: lowercase;
+            font-family: inherit;
+        }
+        .key-btn:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+        .key-btn:disabled {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        @media (max-width: 600px) {
+            .target-word-display { font-size: 3rem; }
+            .chant-line-display { font-size: 1.5rem; padding: 18px; }
+            .rec-modal-target { font-size: 1.4rem; }
+            .title { font-size: 1.3rem; }
+            .instruction-box { font-size: 1.2rem; }
+            .tab-btn { font-size: 1.1rem; padding: 8px 16px; }
+            .letter-slot { width: 32px; height: 42px; font-size: 1.7rem; }
+            .key-btn { width: 36px; height: 42px; font-size: 1.2rem; }
+            .modal-icon-btn { width: 65px; height: 65px; font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Tab Navigation -->
+        <div class="nav-tabs">
+            <button class="tab-btn active" id="tabWords" onclick="switchTab('words')">
+                <i class="fa-solid fa-pencil"></i> Words
+            </button>
+            <button class="tab-btn" id="tabChant" onclick="switchTab('chant')">
+                <i class="fa-solid fa-music"></i> Chant
+            </button>
+            <button class="tab-btn" id="tabHangman" onclick="switchTab('hangman')">
+                <i class="fa-solid fa-gamepad"></i> Hangman
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <h1 class="title">
+                <i class="fa-solid fa-calendar-days"></i> Can you say the days of the week?
+            </h1>
+            <div id="progressBadge" class="progress-badge">1 / 10</div>
+        </div>
+
+        <!-- 1. WORDS PRACTICE VIEW -->
+        <div id="phonicsView" class="card-body">
+            <div id="stepInstruction" class="instruction-box">
+                <i class="fa-solid fa-eye"></i> <span>Can you read the word?</span>
+            </div>
+
+            <div id="targetWord" class="target-word-display">say</div>
+
+            <button id="recBtn" class="record-btn" onclick="toggleRecording()">
+                <i class="fa-solid fa-microphone"></i> Record
+            </button>
+
+            <button id="nextPhonicsBtn" class="btn-next hidden" onclick="nextPhonicsStep()">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- 2. CHANT PRACTICE VIEW -->
+        <div id="chantView" class="card-body hidden">
+            <div class="instruction-box">
+                <i class="fa-solid fa-music"></i> <span>Let's read the chant!</span>
+            </div>
+
+            <div class="chant-line-display" id="chantLineDisplay">
+                Can you say the days of the week?
+            </div>
+
+            <button id="chantRecBtn" class="record-btn" onclick="toggleChantRecording()">
+                <i class="fa-solid fa-microphone"></i> Record
+            </button>
+
+            <button id="nextChantBtn" class="btn-next hidden" onclick="nextChantStep()">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- 3. HANGMAN GAME VIEW -->
+        <div id="hangmanView" class="card-body hidden">
+            <div class="hangman-area">
+                <div class="game-main">
+                    <div class="canvas-card">
+                        <canvas id="hangmanCanvas" width="180" height="180"></canvas>
+                    </div>
+
+                    <div class="word-card">
+                        <div style="font-size: 1.2rem; font-weight: bold; color: var(--purple);">
+                            <i class="fa-solid fa-puzzle-piece"></i> Spell the word!
+                        </div>
+                        <div class="word-slots" id="wordSlots"></div>
+                        <button class="modal-icon-btn" style="background: var(--purple); width:55px; height:55px; font-size:1.3rem;" onclick="playCurrentHangmanAudio()">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="keyboard-grid" id="keyboardGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTEN AND CHECK MODAL -->
+    <div class="modal-overlay" id="recModal">
+        <div class="rec-modal-card">
+            <div class="rec-modal-title">Listen and check!</div>
+            <div class="rec-modal-target" id="recTargetText">say</div>
+            <div class="rec-modal-btns">
+                <button class="modal-icon-btn" style="background: var(--purple);" onclick="playTargetVoice()">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <button class="modal-icon-btn" style="background: var(--primary);" onclick="playRecordedAudio()">
+                    <i class="fa-solid fa-headphones"></i>
+                </button>
+                <button class="modal-icon-btn" style="background: var(--success);" onclick="closeRecModal()">
+                    <i class="fa-solid fa-check"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="userAudioPlayer" style="display:none;"></audio>
+
+    <script>
+        const wordList = [
+            "say", "days", "week", "Sunday", "Monday",
+            "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+        ];
+
+        const chantPhrases = [
+            "Can you say the days of the week?",
+            "Yes, I can! Yes, I can!",
+            "I can say the days of the week.",
+            "Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday!"
+        ];
+
+        let currentIndex = 0;
+        let chantIndex = 0;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedAudioUrl = null;
+        let isRecording = false;
+        let isChantMode = false;
+        let preferredVoice = null;
+
+        /* --- Voice Engine --- */
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) return;
+
+            const usVoices = voices.filter(v => v.lang === "en-US" || v.lang === "en_US" || v.lang.startsWith("en"));
+            
+            preferredVoice = 
+                usVoices.find(v => v.name.includes("Ava")) ||
+                usVoices.find(v => v.name.includes("Ana")) ||
+                usVoices.find(v => v.name.includes("Jenny")) ||
+                usVoices.find(v => v.name.includes("Google US English")) ||
+                usVoices.find(v => v.name.includes("Google English")) ||
+                usVoices.find(v => v.name.includes("Samantha")) ||
+                usVoices.find(v => v.name.includes("Aria")) ||
+                usVoices[0] || 
+                voices[0];
+        }
+
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        function speak(text) {
+            if (!('speechSynthesis' in window)) return;
+            if (!preferredVoice) loadVoices();
+
+            window.speechSynthesis.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
+            if (preferredVoice) uttr.voice = preferredVoice;
+            uttr.lang = 'en-US';
+            uttr.rate = 0.65;
+            uttr.pitch = 1.0;
+
+            window.speechSynthesis.resume();
+            window.speechSynthesis.speak(uttr);
+        }
+
+        /* --- Tab Switcher Logic --- */
+        function switchTab(tabName) {
+            if (isRecording) stopRecording();
+
+            document.getElementById('phonicsView').classList.add('hidden');
+            document.getElementById('chantView').classList.add('hidden');
+            document.getElementById('hangmanView').classList.add('hidden');
+
+            document.getElementById('tabWords').classList.remove('active');
+            document.getElementById('tabChant').classList.remove('active');
+            document.getElementById('tabHangman').classList.remove('active');
+
+            if (tabName === 'words') {
+                document.getElementById('phonicsView').classList.remove('hidden');
+                document.getElementById('tabWords').classList.add('active');
+                isChantMode = false;
+                loadPhonicsStep();
+            } else if (tabName === 'chant') {
+                document.getElementById('chantView').classList.remove('hidden');
+                document.getElementById('tabChant').classList.add('active');
+                isChantMode = true;
+                loadChantStep();
+            } else if (tabName === 'hangman') {
+                document.getElementById('hangmanView').classList.remove('hidden');
+                document.getElementById('tabHangman').classList.add('active');
+                startHangmanSection();
+            }
+        }
+
+        /* --- Phonics Logic --- */
+        function loadPhonicsStep() {
+            document.getElementById('progressBadge').textContent = `${currentIndex + 1} / ${wordList.length}`;
+            document.getElementById('targetWord').textContent = wordList[currentIndex];
+            document.getElementById('nextPhonicsBtn').classList.add('hidden');
+            
+            const btnEl = document.getElementById('recBtn');
+            btnEl.classList.remove("recording");
+            btnEl.innerHTML = '<i class="fa-solid fa-microphone"></i> Record';
+        }
+
+        async function toggleRecording() {
+            isChantMode = false;
+            if (isRecording) {
+                stopRecording();
+            } else {
+                await startRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunks = [];
+                
+                let mimeType = '';
+                if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+                else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
+
+                const options = mimeType ? { mimeType } : {};
+                mediaRecorder = new MediaRecorder(stream, options);
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    stream.getTracks().forEach(track => track.stop());
+
+                    const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/wav' });
+                    recordedAudioUrl = URL.createObjectURL(blob);
+                    document.getElementById("userAudioPlayer").src = recordedAudioUrl;
+
+                    document.getElementById("recTargetText").textContent = isChantMode ? chantPhrases[chantIndex] : wordList[currentIndex];
+                    document.getElementById("recModal").style.display = "flex";
+                };
+
+                mediaRecorder.start(100);
+                isRecording = true;
+
+                const btnEl = isChantMode ? document.getElementById('chantRecBtn') : document.getElementById('recBtn');
+                btnEl.classList.add("recording");
+                btnEl.innerHTML = '<i class="fa-solid fa-square"></i> Stop';
+
+            } catch (err) {
+                alert("マイクの使用が許可されていないか、エラーが発生しました。");
+                console.error("録音エラー:", err);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+            }
+            
+            isRecording = false;
+            const btnEl = isChantMode ? document.getElementById('chantRecBtn') : document.getElementById('recBtn');
+            btnEl.classList.remove("recording");
+            btnEl.innerHTML = '<i class="fa-solid fa-microphone"></i> Record';
+        }
+
+        /* --- Chant Logic --- */
+        function loadChantStep() {
+            document.getElementById('progressBadge').textContent = `Chant ${chantIndex + 1} / ${chantPhrases.length}`;
+            document.getElementById('chantLineDisplay').textContent = chantPhrases[chantIndex];
+            document.getElementById('nextChantBtn').classList.add('hidden');
+
+            const btnEl = document.getElementById('chantRecBtn');
+            btnEl.classList.remove("recording");
+            btnEl.innerHTML = '<i class="fa-solid fa-microphone"></i> Record';
+        }
+
+        async function toggleChantRecording() {
+            isChantMode = true;
+            if (isRecording) {
+                stopRecording();
+            } else {
+                await startRecording();
+            }
+        }
+
+        function playTargetVoice() {
+            speak(isChantMode ? chantPhrases[chantIndex] : wordList[currentIndex]);
+        }
+
+        function playRecordedAudio() {
+            const player = document.getElementById("userAudioPlayer");
+            if (!player.src) return;
+            player.currentTime = 0;
+            player.play().catch(e => console.error("再生エラー:", e));
+        }
+
+        function closeRecModal() {
+            document.getElementById("recModal").style.display = "none";
+            if (isChantMode) {
+                document.getElementById('nextChantBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('nextPhonicsBtn').classList.remove('hidden');
+            }
+        }
+
+        function nextPhonicsStep() {
+            currentIndex++;
+            if (currentIndex < wordList.length) {
+                loadPhonicsStep();
+            } else {
+                switchTab('chant');
+            }
+        }
+
+        function nextChantStep() {
+            chantIndex++;
+            if (chantIndex < chantPhrases.length) {
+                loadChantStep();
+            } else {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                switchTab('hangman');
+            }
+        }
+
+        /* --- Hangman Logic --- */
+        let hangmanIndex = 0;
+        let currentWord = "";
+        let guessedLetters = new Set();
+        let wrongGuesses = 0;
+        const maxWrong = 6;
+
+        function startHangmanSection() {
+            hangmanIndex = 0;
+            startHangmanStage(0);
+        }
+
+        function initKeyboard() {
+            const grid = document.getElementById("keyboardGrid");
+            grid.innerHTML = "";
+            const letters = "abcdefghijklmnopqrstuvwxyz".split("");
+
+            letters.forEach(letter => {
+                const btn = document.createElement("button");
+                btn.className = "key-btn";
+                btn.id = "key-" + letter;
+                btn.textContent = letter;
+                btn.onclick = () => handleGuess(letter);
+                grid.appendChild(btn);
+            });
+        }
+
+        function startHangmanStage(index) {
+            hangmanIndex = index;
+            if (hangmanIndex >= wordList.length) {
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+                alert("🎉 Awesome! You cleared all the words!");
+                hangmanIndex = 0;
+            }
+
+            currentWord = wordList[hangmanIndex].toLowerCase();
+            guessedLetters.clear();
+            wrongGuesses = 0;
+
+            document.getElementById('progressBadge').textContent = `Game ${hangmanIndex + 1} / ${wordList.length}`;
+
+            initKeyboard();
+            renderWordSlots();
+            drawHangman();
+            playCurrentHangmanAudio();
+        }
+
+        function playCurrentHangmanAudio() {
+            speak(currentWord);
+        }
+
+        function renderWordSlots() {
+            const wordSlots = document.getElementById("wordSlots");
+            wordSlots.innerHTML = "";
+            let isComplete = true;
+
+            for (let char of currentWord) {
+                const slot = document.createElement("div");
+                slot.className = "letter-slot";
+                
+                if (guessedLetters.has(char)) {
+                    slot.textContent = char;
+                } else {
+                    slot.textContent = "";
+                    isComplete = false;
+                }
+                wordSlots.appendChild(slot);
+            }
+
+            if (isComplete) {
+                setTimeout(() => {
+                    speak(currentWord);
+                    confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                    alert(`✨ WIN! "${currentWord}"`);
+                    startHangmanStage(hangmanIndex + 1);
+                }, 200);
+            }
+        }
+
+        function handleGuess(letter) {
+            guessedLetters.add(letter);
+
+            const keyBtn = document.getElementById("key-" + letter);
+            if (keyBtn) {
+                keyBtn.disabled = true;
+            }
+
+            if (!currentWord.includes(letter)) {
+                wrongGuesses++;
+                drawHangman();
+
+                if (wrongGuesses >= maxWrong) {
+                    setTimeout(() => {
+                        alert(`💀 GAME OVER! The word was "${currentWord}". Try again!`);
+                        startHangmanStage(hangmanIndex);
+                    }, 200);
+                    return;
+                }
+            }
+
+            renderWordSlots();
+        }
+
+        function drawHangman() {
+            const canvas = document.getElementById("hangmanCanvas");
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Gallows
+            ctx.strokeStyle = "#4A5568";
+            ctx.lineWidth = 4;
+            ctx.lineCap = "round";
+
+            ctx.beginPath();
+            ctx.moveTo(20, 160);
+            ctx.lineTo(80, 160);
+            ctx.moveTo(50, 160);
+            ctx.lineTo(50, 20);
+            ctx.lineTo(120, 20);
+            ctx.lineTo(120, 40);
+            ctx.stroke();
+
+            // Stick figure
+            ctx.strokeStyle = "#FF6B6B";
+            ctx.lineWidth = 3;
+
+            if (wrongGuesses >= 1) { // Head
+                ctx.beginPath();
+                ctx.arc(120, 55, 15, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            if (wrongGuesses >= 2) { // Body
+                ctx.beginPath();
+                ctx.moveTo(120, 70);
+                ctx.lineTo(120, 115);
+                ctx.stroke();
+            }
+            if (wrongGuesses >= 3) { // Left arm
+                ctx.beginPath();
+                ctx.moveTo(120, 80);
+                ctx.lineTo(95, 100);
+                ctx.stroke();
+            }
+            if (wrongGuesses >= 4) { // Right arm
+                ctx.beginPath();
+                ctx.moveTo(120, 80);
+                ctx.lineTo(145, 100);
+                ctx.stroke();
+            }
+            if (wrongGuesses >= 5) { // Left leg
+                ctx.beginPath();
+                ctx.moveTo(120, 115);
+                ctx.lineTo(95, 145);
+                ctx.stroke();
+            }
+            if (wrongGuesses >= 6) { // Right leg
+                ctx.beginPath();
+                ctx.moveTo(120, 115);
+                ctx.lineTo(145, 145);
+                ctx.stroke();
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPhonicsStep();
+        });
+    </script>
+</body>
+</html>
